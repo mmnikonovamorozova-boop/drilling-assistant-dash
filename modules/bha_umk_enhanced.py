@@ -93,12 +93,12 @@ def create_umk_enhanced_panel():
         html.Div(id='umk-results-enhanced', style={"marginTop": "20px"})
     ])
 
-def calculate_umk_enhanced(control_type, key_model, lever_arm, cable_diam, target_torque):
-    """Расчет с учетом типа контроля"""
+def calculate_umk_enhanced(control_type, key_model, lever_arm, cable_diam, target_torque, k_factor):
+    """Расчет с учетом типа контроля и коэффициента из паспорта"""
     key_data = KEY_MODELS_DB.get(key_model, {"lever_arm": 1.1, "k_factor": 1.0})
     
-    # Базовое усилие
-    force_kn = target_torque / lever_arm
+    # Базовое усилие с учетом коэффициента из паспорта
+    force_kn = (target_torque / lever_arm) * k_factor
     
     if control_type == 'electronic':
         # ИВЭ-50: показание в тоннах (деление на g=9.81)
@@ -106,12 +106,10 @@ def calculate_umk_enhanced(control_type, key_model, lever_arm, cable_diam, targe
         unit = "тонн"
         metric_title = "ЦЕЛЕВОЕ УСИЛИЕ НА ИВЭ-50"
     else:
-        # Гидравлика: показание в МПа
-        # Площадь сечения каната: A = π*d²/4
+        # Гидравлика: показание в МПа через площадь сечения каната
         cable_area_m2 = 3.14159 * (cable_diam/1000)**2 / 4
-        # Давление = Сила / Площадь
         pressure_pa = (force_kn * 1000) / cable_area_m2
-        force_display = pressure_pa / 1e6  # Перевод в МПа
+        force_display = pressure_pa / 1e6
         unit = "МПа"
         metric_title = "ЦЕЛЕВОЕ ДАВЛЕНИЕ НА МАНОМЕТРЕ"
     
@@ -119,7 +117,8 @@ def calculate_umk_enhanced(control_type, key_model, lever_arm, cable_diam, targe
         "value": force_display,
         "unit": unit,
         "title": metric_title,
-        "force_kn": force_kn
+        "force_kn": force_kn,
+        "k_factor": k_factor
     }
 
 def umk_enhanced_callbacks(app, data_bridge):
@@ -131,16 +130,30 @@ def umk_enhanced_callbacks(app, data_bridge):
          Input('umk-key-model-enhanced', 'value'),
          Input('umk-lever-enhanced', 'value'),
          Input('umk-cable-diam', 'value'),
-         Input('umk-torque-target', 'value')]
+         Input('umk-torque-target', 'value'),
+         Input('umk-passport-k-factor', 'value')]  # ← НОВЫЙ INPUT
     )
-    def update_umk_results(control_type, key_model, lever, cable_diam, torque):
+    def update_umk_results(control_type, key_model, lever, cable_diam, torque, k_factor):
+        # Защита от None
         if None in [control_type, key_model, lever, cable_diam, torque]:
             return html.P("Введите все параметры")
         
-        result = calculate_umk_enhanced(control_type, key_model, lever, cable_diam, torque)
+        if k_factor is None:
+            k_factor = 1.0
         
-        # Цветовая индикация
-        color = "#F59E0B" if result["force_kn"] > 40 else "#10B981"
+        result = calculate_umk_enhanced(control_type, key_model, lever, cable_diam, torque, k_factor)
+        
+        # Цветовая индикация с учетом коэффициента
+        if k_factor != 1.0:
+            warning_text = html.Div(
+                f"⚠ Применен коэффициент из паспорта: {k_factor:.2f}",
+                style={"color": "#F59E0B", "fontSize": "12px", "marginTop": "10px"}
+            )
+        else:
+            warning_text = html.Div(
+                "Коэффициент по умолчанию: 1.00",
+                style={"color": "#10B981", "fontSize": "12px", "marginTop": "10px"}
+            )
         
         return html.Div([
             html.Div(style={
@@ -148,16 +161,19 @@ def umk_enhanced_callbacks(app, data_bridge):
                 "padding": "20px",
                 "borderRadius": "8px",
                 "textAlign": "center",
-                "border": f"2px solid {color}"
+                "border": "2px solid #F59E0B"
             }, children=[
                 html.Div(result["title"], style={"color": "#9CA3AF", "fontSize": "13px", "marginBottom": "10px"}),
                 html.Div(f"{result['value']:.2f} {result['unit']}", 
-                        style={"color": color, "fontSize": "32px", "fontWeight": "bold"})
+                        style={"color": "#F59E0B", "fontSize": "32px", "fontWeight": "bold"})
             ]),
+            
+            warning_text,
             
             html.Div(style={"marginTop": "15px", "padding": "10px", "backgroundColor": "#F3F4F6"}, children=[
                 html.P(f"Фактическое усилие: {result['force_kn']:.2f} кН", style={"margin": "5px 0"}),
                 html.P(f"Плечо рычага: {lever} м", style={"margin": "5px 0"}),
                 html.P(f"Диаметр каната: {cable_diam} мм", style={"margin": "5px 0"}),
+                html.P(f"Коэффициент паспорта: {k_factor:.2f}", style={"margin": "5px 0", "fontWeight": "bold"}),
             ])
         ])
