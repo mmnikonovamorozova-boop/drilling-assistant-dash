@@ -97,3 +97,9 @@ elif pathname == '/sync':
         html.H2("Синхронизация данных", className="mb-4"),
         create_sync_panel()
     ])
+elif pathname == '/office-sync':
+    from modules.office_sync_interface import create_office_sync_panel
+    return html.Div([
+        html.H2("Центральный узел синхронизации", className="mb-4"),
+        create_office_sync_panel()
+    ])
