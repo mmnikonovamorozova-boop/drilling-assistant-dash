@@ -5,6 +5,7 @@
 import pandas as pd
 from dash import html
 import dash_ag_grid as dag
+from modules.warehouse import create_alternative_suggestion
 
 # Пример данных КНБК (в будущем будет браться из DataBridge после входного контроля)
 bha_elements_for_joints = [
@@ -70,7 +71,29 @@ def get_joints_table_component():
         {"headerName": "Допуск СТО", "field": "Допуск СТО", "width": 120, "cellStyle": {"textAlign": "center"}},
         {"headerName": "Статус", "field": "Статус", "width": 180, "cellStyle": {"textAlign": "center", "fontWeight": "bold"}},
     ]
-    
+
+# Поиск критических стыков и предложение альтернатив
+critical_joints = df_joints[df_joints['Статус'] == 'КРИТИЧЕСКИЙ ПЕРЕПАД']
+
+if not critical_joints.empty:
+    alternatives_section = html.Div([
+        html.H5("Рекомендации по устранению критических стыков:", 
+               style={"color": "#dc2626", "marginTop": "20px", "marginBottom": "15px"}),
+        *[create_alternative_suggestion({
+            'idx': row['Стык №'],
+            'top': row['Элемент А'],
+            'bot': row['Элемент Б'],
+            'delta': row['ΔD (мм)'],
+            'od_top': row['OD А (мм)'],
+            'od_bot': row['OD Б (мм)']
+        }) for _, row in critical_joints.iterrows()]
+    ])
+else:
+    alternatives_section = html.Div("")
+
+# Верни оба компонента
+return html.Div([
+   
     # CSS для цветовой индикации строк
     row_style = {
         "styleConditions": [
@@ -104,7 +127,7 @@ def get_joints_table_component():
                 "rowStyle": row_style,
             },
         ),
-        
+        alternatives_section
         # Легенда
         html.Div(style={"marginTop": "15px", "fontSize": "12px", "color": "#64748b"}, children=[
             html.Span("Легенда: ", style={"fontWeight": "bold"}),
