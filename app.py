@@ -16,8 +16,9 @@ from modules.role_selection import create_role_selection_layout, role_selection_
 from modules.bha_assembly import bha_assembly_layout, bha_assembly_callbacks
 from modules.mud_control import create_mud_control_layout, mud_control_callbacks
 from modules.compliance_checklist import create_compliance_layout, compliance_checklist_callbacks
+from modules.trajectory_forecast import create_trajectory_layout, trajectory_forecast_callbacks
 from modules.knowledge_base_admin import create_kb_admin_layout, kb_admin_callbacks
-from modules.sync_interface import create_sync_panel, sync_callbacks
+from modules.telemetry_demo import create_telemetry_demo_layout, telemetry_demo_callbacks
 
 # 1. Инициализация приложения
 app = dash.Dash(
@@ -96,15 +97,25 @@ def display_page(pathname):
     elif pathname == '/mud':
         return create_mud_control_layout(), {"display": "flex"}, {"display": "none"}
     
+    elif pathname == '/trajectory':
+        return create_trajectory_layout(), {"display": "flex"}, {"display": "none"}
+    
     elif pathname == '/compliance':
         return create_compliance_layout(), {"display": "flex"}, {"display": "none"}
+    
+    elif pathname == '/telemetry-demo':
+        return create_telemetry_demo_layout(), {"display": "flex"}, {"display": "none"}
     
     # ===== ОФИСНЫЙ РЕЖИМ (АДМИНИСТРИРОВАНИЕ) =====
     elif pathname == '/kb-admin':
         return create_kb_admin_layout(), {"display": "flex"}, {"display": "none"}
     
     elif pathname == '/sync':
-        return create_sync_panel(), {"display": "flex"}, {"display": "none"}
+        # Заглушка для модуля синхронизации
+        return html.Div([
+            html.H3("Модуль синхронизации данных", className="mt-4"),
+            html.P("Интерфейс трехуровневой синхронизации (буровая ↔ офис ↔ буровая) находится в разработке.")
+        ]), {"display": "flex"}, {"display": "none"}
     
     else:
         # Если путь неизвестен, показываем 404 или перенаправляем на выбор роли
@@ -118,9 +129,10 @@ auth_callbacks(app, data_bridge)
 role_selection_callbacks(app, data_bridge)
 bha_assembly_callbacks(app, data_bridge)
 mud_control_callbacks(app, data_bridge)
+trajectory_forecast_callbacks(app, data_bridge)
 compliance_checklist_callbacks(app, data_bridge)
+telemetry_demo_callbacks(app, data_bridge)
 kb_admin_callbacks(app, data_bridge)
-sync_callbacks(app, data_bridge)
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='127.0.0.1', port=8050)
