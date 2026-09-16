@@ -1,0 +1,16 @@
+# Локальный ИИ-парсер документов
+# Установка: pip install -r tools/requirements_parser.txt
+
+# Для работы с PDF
+pymupdf==1.24.0
+camelot-py[cv]==0.11.0
+
+# OCR для сканов (опционально, ~500 МБ)
+paddleocr==2.8.1
+paddlepaddle==2.6.1
+
+# Для вызова локальной Ollama через OpenAI-совместимый API
+openai==1.30.0
+
+# Утилиты
+python-dotenv==1.0.1
