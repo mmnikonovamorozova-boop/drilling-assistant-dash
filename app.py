@@ -91,3 +91,9 @@ bha_assembly_callbacks(app, data_bridge)
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='127.0.0.1', port=8050)
+elif pathname == '/sync':
+    from modules.sync_interface import create_sync_panel
+    return html.Div([
+        html.H2("Синхронизация данных", className="mb-4"),
+        create_sync_panel()
+    ])
