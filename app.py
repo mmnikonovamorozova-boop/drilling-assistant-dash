@@ -8,12 +8,15 @@ import dash_bootstrap_components as dbc
 
 from utils.data_bridge import DataBridge
 from components.sidebar import create_sidebar
+
+# Импорт модулей и их layout/callback функций
 from modules.auth import auth_layout, auth_callbacks
 from modules.bha_assembly import bha_assembly_layout, bha_assembly_callbacks
 from modules.mud_control import create_mud_control_layout, mud_control_callbacks
+from modules.compliance_checklist import create_compliance_layout, compliance_checklist_callbacks
 from modules.sync_interface import create_sync_panel, sync_callbacks
 
-# 1. Инициализация приложения (БЫЛО ПРОПУЩЕНО)
+# 1. Инициализация приложения
 app = dash.Dash(
     __name__, 
     external_stylesheets=[dbc.themes.BOOTSTRAP],
@@ -89,8 +92,7 @@ def display_page(pathname):
         return create_mud_control_layout(), {"display": "flex"}, {"display": "none"}
     
     elif pathname == '/compliance':
-        return html.Div([html.H3("Модуль Комплаенса и ЛНД", className="mt-4"), 
-                         html.P("Интерфейс в разработке. Здесь будет матрица ответственности и чек-листы.")]), {"display": "flex"}, {"display": "none"}
+        return create_compliance_layout(), {"display": "flex"}, {"display": "none"}
     
     elif pathname == '/sync':
         return create_sync_panel(), {"display": "flex"}, {"display": "none"}
@@ -102,6 +104,7 @@ def display_page(pathname):
 auth_callbacks(app, data_bridge)
 bha_assembly_callbacks(app, data_bridge)
 mud_control_callbacks(app, data_bridge)
+compliance_checklist_callbacks(app, data_bridge)
 sync_callbacks(app, data_bridge)
 
 if __name__ == '__main__':
