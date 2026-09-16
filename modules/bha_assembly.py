@@ -87,10 +87,7 @@ def get_visual_tab():
     ])
     
 def get_umk_tab():
-    """Вкладка 3: УМК с ИВЭ-50/Гидравлика"""
-    return html.Div([
-        create_umk_enhanced_panel(),
-    ])
+    return create_umk_enhanced_panel()
 
 def get_vzd_panel():
     """Правая панель: Контроль ВЗД (Всегда видна)"""
