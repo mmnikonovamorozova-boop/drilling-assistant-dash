@@ -1,19 +1,23 @@
 """
 МОДУЛЬ: СБОРКА КНБК И ВХОДНОЙ КОНТРОЛЬ
-Объединяет входной контроль элементов и проверку ВЗД.
+Объединяет входной контроль элементов, проверку ВЗД, УМК, склад и оценку рисков.
 """
-from modules.warehouse import create_warehouse_upload_section, create_alternative_suggestion, warehouse_callbacks
-from modules.ai_advisor import create_ai_advisor_panel, ai_advisor_callbacks
-from modules.bha_umk_enhanced import create_umk_enhanced_panel, umk_enhanced_callbacks
-from modules.bha_joints import get_joints_table_component
-from modules.bha_visual import create_bha_visualization
 from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
 import dash_table
 import pandas as pd
 
+# Импорты всех подмодулей
+from modules.warehouse import create_warehouse_upload_section, create_alternative_suggestion, warehouse_callbacks
+from modules.ai_advisor import create_ai_advisor_panel, ai_advisor_callbacks
+from modules.bha_umk_enhanced import create_umk_enhanced_panel, umk_enhanced_callbacks
+from modules.bha_joints import get_joints_table_component
+from modules.bha_visual import create_bha_visualization
+from modules.vzd_wear import create_vzd_wear_panel, vzd_wear_callbacks
+from modules.risk_assessment import create_risk_assessment_panel, risk_assessment_callbacks
+from utils.data_bridge import DataBridge
+
 # --- ДАННЫЕ ДЛЯ ПРИМЕРА (Имитация парсинга рапорта) ---
-# В будущем это будет приходить из data_bridge после загрузки файла
 sample_bha_data = pd.DataFrame([
     {"№": 1, "Элемент": "ТБТ-172", "OD факт": 171.5, "OD ном": 172.0, "Статус": "ОК"},
     {"№": 2, "Элемент": "Переводник 172/165", "OD факт": 171.8, "OD ном": 172.0, "Статус": "ОК"},
@@ -21,12 +25,15 @@ sample_bha_data = pd.DataFrame([
     {"№": 4, "Элемент": "НУБТ-165", "OD факт": 164.5, "OD ном": 165.0, "Статус": "ОК"},
 ])
 
-# --- ЛЕЙАУТ (ВНЕШНИЙ ВИД) ---
+# ============================================================================
+# ЛЕЙАУТ ВКЛАДОК
+# ============================================================================
 
 def get_input_control_tab():
     """Вкладка 1: Входной контроль (Таблица элементов)"""
     return html.Div([
-        html.H4("Журнал входного контроля элементов КНБК", style={"color": "#0f172a", "borderBottom": "2px solid #cbd5e1", "paddingBottom": "10px"}),
+        html.H4("Журнал входного контроля элементов КНБК", 
+                style={"color": "#0f172a", "borderBottom": "2px solid #cbd5e1", "paddingBottom": "10px"}),
         html.P("Внесите фактические замеры по каждому элементу согласно паспорту.", style={"color": "#64748b"}),
         
         dash_table.DataTable(
@@ -68,11 +75,9 @@ def get_visual_tab():
     fig = create_bha_visualization()
     
     return html.Div([
-        # Заголовок вкладки
         html.H4("Визуальная схема КНБК (Топология)", 
                 style={"color": "#0f172a", "marginBottom": "15px", "borderBottom": "2px solid #cbd5e1", "paddingBottom": "10px"}),
         
-        # Интерактивный график КНБК
         dcc.Graph(
             id='bha-visual-graph', 
             figure=fig,
@@ -81,128 +86,64 @@ def get_visual_tab():
         
         html.Hr(style={"borderColor": "#cbd5e1", "margin": "25px 0"}),
         
-        # Таблица стыков
         html.H5("Таблица стыков и перепадов диаметров", 
                 style={"color": "#0f172a", "marginTop": "20px", "marginBottom": "15px"}),
         
         get_joints_table_component(),
     ])
-    
+
 def get_umk_tab():
+    """Вкладка 3: УМК"""
     return create_umk_enhanced_panel()
+
+def get_warehouse_tab():
+    """Вкладка 4: Живой склад"""
+    return create_warehouse_upload_section()
+
+def get_risks_tab():
+    """Вкладка 5: Оценка рисков"""
+    return create_risk_assessment_panel()
 
 def get_vzd_panel():
     """Правая панель: Контроль ВЗД (Всегда видна)"""
-    return html.Div([
-        # Блок ввода
-        html.Label("Размер 'А' (мм):", style={"fontSize": "12px", "fontWeight": "bold"}),
-        dcc.Input(id='vzd-size-a', type='number', value=10.00, style={"width": "100%", "marginBottom": "10px", "padding": "5px"}),
-        
-        html.Label("Размер 'Б' (мм):", style={"fontSize": "12px", "fontWeight": "bold"}),
-        dcc.Input(id='vzd-size-b', type='number', value=5.50, style={"width": "100%", "marginBottom": "10px", "padding": "5px"}),
-        
-        html.Label("Радиальный люфт ИЧ (мм):", style={"fontSize": "12px", "fontWeight": "bold"}),
-        dcc.Input(id='vzd-radial', type='number', value=0.20, step=0.05, style={"width": "100%", "marginBottom": "15px", "padding": "5px"}),
-        html.Div(id='ai-advisor-output', style={"marginTop": "20px"})
-        # Блок расчета
-        html.Div(className="metric-card", children=[
-            html.Div(className="metric-label", children="ОСЕВОЙ ЛЮФТ"),
-            html.Div(id='vzd-axial-result', className="metric-value", children="4.50 мм", style={"color": "#dc2626"})
-        ]),
-        
-        html.Div(className="metric-card", children=[
-            html.Div(className="metric-label", children="ЛИМИТ (Паспорт/ТК)"),
-            html.Div(className="metric-value", children="3.00 мм", style={"fontSize": "18px"})
-        ]),
-        
-        # Вердикт
-        html.Div(id='vzd-verdict-box', className="verdict-box verdict-reject", children=[
-            "ВЗД ОТБРАКОВАН",
-            html.Br(),
-            html.Span("Спуск запрещен", style={"fontSize": "12px", "fontWeight": "normal"})
-        ])
-    ])
+    return create_vzd_wear_panel()
 
-# --- CALLBACKS (ЛОГИКА) ---
-# Регистрируем callback'и модуля рисков
-risk_assessment_callbacks(app, data_bridge)
-# Регистрируем callback'и модуля УМК
-umk_enhanced_callbacks(app, data_bridge)
-ai_advisor_callbacks(app, data_bridge)
-# Регистрируем callback'и модуля склада
-    warehouse_callbacks(app, data_bridge)
+# ============================================================================
+# CALLBACKS (ЛОГИКА)
+# ============================================================================
+
 def bha_assembly_callbacks(app, data_bridge):
+    """Регистрирует ВСЕ callback'и модуля сборки КНБК"""
     
-    # 1. Переключение вкладок
+    # 1. Регистрируем callback'и всех подмодулей
+    vzd_wear_callbacks(app, data_bridge)
+    umk_enhanced_callbacks(app, data_bridge)
+    ai_advisor_callbacks(app, data_bridge)
+    warehouse_callbacks(app, data_bridge)
+    risk_assessment_callbacks(app, data_bridge)
+    
+    # 2. Переключение вкладок
     @app.callback(
         Output('tabs-content', 'children'),
         Input('main-tabs', 'value')
     )
-def render_tab_content(tab_value):
-    if tab_value == 'tab-input':
-        return get_input_control_tab()
-    elif tab_value == 'tab-visual':
-        return get_visual_tab()
-    elif tab_value == 'tab-umk':
-        return get_umk_tab()
-    elif tab_value == 'tab-warehouse':
-        from modules.warehouse import create_warehouse_upload_section
-        return create_warehouse_upload_section()
-    elif tab_value == 'tab-risks':  # НОВАЯ ВКЛАДКА
-        return create_risk_assessment_panel()
-    return html.Div("Выберите вкладку")
-
-    # 2. Инициализация правой панели при загрузке
+    def render_tab_content(tab_value):
+        if tab_value == 'tab-input':
+            return get_input_control_tab()
+        elif tab_value == 'tab-visual':
+            return get_visual_tab()
+        elif tab_value == 'tab-umk':
+            return get_umk_tab()
+        elif tab_value == 'tab-warehouse':
+            return get_warehouse_tab()
+        elif tab_value == 'tab-risks':
+            return get_risks_tab()
+        return html.Div("Выберите вкладку")
+    
+    # 3. Инициализация правой панели при загрузке
     @app.callback(
         Output('vzd-panel-content', 'children'),
-        Input('main-tabs', 'value') # Срабатывает при старте
+        Input('main-tabs', 'value')
     )
     def init_vzd_panel(_):
         return get_vzd_panel()
-
-    # 3. Живой расчет люфта ВЗД (Drill-down логика)
-    @app.callback(
-        [Output('vzd-axial-result', 'children'),
-         Output('vzd-axial-result', 'style'),
-         Output('vzd-verdict-box', 'children'),
-         Output('vzd-verdict-box', 'className'),
-         Output('metric-vzd-status', 'children'),
-         Output('metric-vzd-status', 'style')],
-        [Input('vzd-size-a', 'value'),
-         Input('vzd-size-b', 'value')]
-    )
-    def calculate_vzd_wear(size_a, size_b):
-        if size_a is None or size_b is None:
-            return "0.00 мм", {}, "ОЖИДАНИЕ ДАННЫХ", "verdict-box", "ОЖИДАНИЕ", {}
-        
-        axial_play = size_a - size_b
-        limit = 3.00 # Лимит ТК (например, Роснефть)
-        
-        # Форматирование значения
-        val_str = f"{axial_play:.2f} мм"
-        
-        # Логика вердикта
-        if axial_play >= limit:
-            # ОТБРАКОВКА
-            verdict_text = [
-                "ВЗД ОТБРАКОВАН",
-                html.Br(),
-                html.Span(f"Люфт {val_str} > лимит {limit:.2f} мм", style={"fontSize": "12px", "fontWeight": "normal"})
-            ]
-            verdict_class = "verdict-box verdict-reject"
-            style_val = {"color": "#dc2626"}
-            status_text = "ОТБРАКОВАН"
-            status_style = {"color": "#dc2626", "fontWeight": "bold"}
-        else:
-            # НОРМА
-            verdict_text = [
-                "ВЗД ДОПУЩЕН",
-                html.Br(),
-                html.Span(f"Люфт {val_str} < лимит {limit:.2f} мм", style={"fontSize": "12px", "fontWeight": "normal"})
-            ]
-            verdict_class = "verdict-box verdict-approve"
-            style_val = {"color": "#16a34a"}
-            status_text = "ДОПУЩЕН"
-            status_style = {"color": "#16a34a", "fontWeight": "bold"}
-            
-        return val_str, style_val, verdict_text, verdict_class, status_text, status_style
