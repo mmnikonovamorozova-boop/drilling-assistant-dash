@@ -8,10 +8,8 @@ import dash_bootstrap_components as dbc
 from modules.bha_assembly import bha_assembly_layout, bha_assembly_callbacks
 from utils.data_bridge import DataBridge
 from modules.mud_control import create_mud_control_layout, mud_control_callbacks
+from modules.mud_control import create_mud_control_layout, mud_control_callbacks
 
-# Инициализация
-app = dash.Dash(__name__, suppress_callback_exceptions=True)
-server = app.server # Для деплоя
 
 data_bridge = DataBridge()
 
