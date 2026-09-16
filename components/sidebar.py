@@ -36,3 +36,4 @@ def create_sidebar():
                    className="w-100 mx-3")
     ], className="vh-100")
 dbc.NavLink("💾 Синхронизация", href="/sync", active="exact"),
+dbc.NavLink("🏢 Офисная синхронизация", href="/office-sync", active="exact"),
