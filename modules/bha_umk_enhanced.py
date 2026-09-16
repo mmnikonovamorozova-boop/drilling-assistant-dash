@@ -18,19 +18,19 @@ KEY_MODELS_DB = {
 }
 
 def create_umk_enhanced_panel():
-    """Панель УМК с переключателем ИВЭ-50/Гидравлика"""
+    """Панель УМК с переключателем ИВЭ-50/Гидравлика и коэффициентом из паспорта"""
     return html.Div([
         html.H4("Расчет усилия на ключе УМК", style={"color": "#0f172a", "marginBottom": "15px"}),
         
-        # Тип контроля
+        # Тип контроля и модель ключа
         dbc.Row([
             dbc.Col([
                 html.Label("Тип контроля натяжения:", style={"fontWeight": "bold"}),
                 dcc.RadioItems(
                     id='umk-control-type',
                     options=[
-                        {'label': '🔌 Электронный (ИВЭ-50)', 'value': 'electronic'},
-                        {'label': '💧 Гидравлический (Манометр)', 'value': 'hydraulic'}
+                        {'label': 'Электронный (ИВЭ-50)', 'value': 'electronic'},
+                        {'label': 'Гидравлический (Манометр)', 'value': 'hydraulic'}
                     ],
                     value='electronic',
                     labelStyle={'display': 'block', 'marginBottom': '5px'}
@@ -48,28 +48,45 @@ def create_umk_enhanced_panel():
             ], width=6),
         ]),
         
+        # НОВЫЙ БЛОК: Коэффициент из паспорта + Плечо + Канат
         dbc.Row([
+            dbc.Col([
+                html.Label("Коэффициент пересчета из паспорта ключа:", 
+                          style={"fontWeight": "bold", "color": "#dc2626"}),
+                dcc.Input(
+                    id='umk-passport-k-factor', 
+                    type='number', 
+                    value=1.0,
+                    min=0.5, 
+                    max=2.0, 
+                    step=0.01,
+                    style={"width": "100%", "padding": "8px", "border": "2px solid #dc2626"},
+                    placeholder="Например: 0.98 или 1.02"
+                ),
+                html.Small("Вводится из акта поверки ключа", 
+                          style={"color": "#64748b", "fontSize": "11px"})
+            ], width=3),
+            
             dbc.Col([
                 html.Label("Плечо рычага, м:", style={"fontWeight": "bold"}),
                 dcc.Input(id='umk-lever-enhanced', type='number', value=1.1, 
                          min=0.1, max=5.0, step=0.05,
                          style={"width": "100%", "padding": "8px"}),
-            ], width=4),
+            ], width=3),
             
             dbc.Col([
                 html.Label("Диаметр каната, мм:", style={"fontWeight": "bold"}),
                 dcc.Input(id='umk-cable-diam', type='number', value=12.0,
                          min=5.0, max=50.0, step=0.5,
-                         style={"width": "100%", "padding": "8px"},
-                         help="Диаметр троса для расчета напряжения"),
-            ], width=4),
+                         style={"width": "100%", "padding": "8px"}),
+            ], width=3),
             
             dbc.Col([
                 html.Label("Целевой момент, кН·м:", style={"fontWeight": "bold"}),
                 dcc.Input(id='umk-torque-target', type='number', value=52.0,
                          min=0.0, max=100.0, step=0.5,
                          style={"width": "100%", "padding": "8px"}),
-            ], width=4),
+            ], width=3),
         ]),
         
         # Результаты
