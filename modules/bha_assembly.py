@@ -123,7 +123,8 @@ def get_vzd_panel():
     ])
 
 # --- CALLBACKS (ЛОГИКА) ---
-
+# Регистрируем callback'и модуля УМК
+umk_callbacks(app, data_bridge)
 def bha_assembly_callbacks(app, data_bridge):
     
     # 1. Переключение вкладок
