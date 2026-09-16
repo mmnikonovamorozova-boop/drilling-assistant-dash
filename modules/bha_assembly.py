@@ -124,9 +124,11 @@ def get_vzd_panel():
     ])
 
 # --- CALLBACKS (ЛОГИКА) ---
+# Регистрируем callback'и модуля рисков
+risk_assessment_callbacks(app, data_bridge)
 # Регистрируем callback'и модуля УМК
-    umk_enhanced_callbacks(app, data_bridge)
-    ai_advisor_callbacks(app, data_bridge)
+umk_enhanced_callbacks(app, data_bridge)
+ai_advisor_callbacks(app, data_bridge)
 # Регистрируем callback'и модуля склада
     warehouse_callbacks(app, data_bridge)
 def bha_assembly_callbacks(app, data_bridge):
@@ -143,8 +145,11 @@ def render_tab_content(tab_value):
         return get_visual_tab()
     elif tab_value == 'tab-umk':
         return get_umk_tab()
-    elif tab_value == 'tab-warehouse':  # НОВАЯ ВКЛАДКА
+    elif tab_value == 'tab-warehouse':
+        from modules.warehouse import create_warehouse_upload_section
         return create_warehouse_upload_section()
+    elif tab_value == 'tab-risks':  # НОВАЯ ВКЛАДКА
+        return create_risk_assessment_panel()
     return html.Div("Выберите вкладку")
 
     # 2. Инициализация правой панели при загрузке
