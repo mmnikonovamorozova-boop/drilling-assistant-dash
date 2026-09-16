@@ -2,6 +2,7 @@
 МОДУЛЬ: СБОРКА КНБК И ВХОДНОЙ КОНТРОЛЬ
 Объединяет входной контроль элементов и проверку ВЗД.
 """
+from modules.ai_advisor import create_ai_advisor_panel, ai_advisor_callbacks
 from modules.bha_umk_enhanced import create_umk_enhanced_panel, umk_enhanced_callbacks
 from modules.bha_joints import get_joints_table_component
 from modules.bha_visual import create_bha_visualization
@@ -101,7 +102,7 @@ def get_vzd_panel():
         
         html.Label("Радиальный люфт ИЧ (мм):", style={"fontSize": "12px", "fontWeight": "bold"}),
         dcc.Input(id='vzd-radial', type='number', value=0.20, step=0.05, style={"width": "100%", "marginBottom": "15px", "padding": "5px"}),
-        
+        html.Div(id='ai-advisor-output', style={"marginTop": "20px"})
         # Блок расчета
         html.Div(className="metric-card", children=[
             html.Div(className="metric-label", children="ОСЕВОЙ ЛЮФТ"),
@@ -124,6 +125,7 @@ def get_vzd_panel():
 # --- CALLBACKS (ЛОГИКА) ---
 # Регистрируем callback'и модуля УМК
     umk_enhanced_callbacks(app, data_bridge)
+    ai_advisor_callbacks(app, data_bridge)
 def bha_assembly_callbacks(app, data_bridge):
     
     # 1. Переключение вкладок
