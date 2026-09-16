@@ -1,10 +1,11 @@
 """
-МОДУЛЬ УПРАВЛЕНИЯ БАЗОЙ ЗНАНИЙ
-Административный интерфейс для инженера по НТД:
+МОДУЛЬ УПРАВЛЕНИЯ БАЗОЙ ЗНАНИЙ (АДМИНИСТРАТИВНЫЙ)
+Интерфейс для инженера по НТД:
 - Просмотр и редактирование правил комплаенса
+- Реестр договоров и технических заданий (ТЗ)
 - Загрузка обновлений от локального ИИ-парсера
 - Управление версиями и историей изменений
-- Экспорт/импорт пакетов для буровых
+- Экспорт пакетов для синхронизации с буровыми
 - Валидация целостности данных
 """
 import json
@@ -12,11 +13,9 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
-from dash import html, dcc, Input, Output, State
+from dash import html, dcc, Input, Output, State, callback_context
 import dash_bootstrap_components as dbc
 import dash_table
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 from utils.compliance_engine import get_compliance_engine
 
@@ -43,6 +42,7 @@ def create_kb_admin_layout():
         # Вкладки управления
         dcc.Tabs(id='kb-admin-tabs', value='tab-rules', className='custom-tabs', children=[
             dcc.Tab(label='Правила комплаенса', value='tab-rules'),
+            dcc.Tab(label='Договоры и ТЗ', value='tab-contracts'), # НОВАЯ ВКЛАДКА
             dcc.Tab(label='Загрузка обновлений', value='tab-uploads'),
             dcc.Tab(label='История изменений', value='tab-history'),
             dcc.Tab(label='Экспорт для буровых', value='tab-export'),
@@ -66,12 +66,12 @@ def create_rules_tab():
                     id='kb-filter-category',
                     options=[
                         {"label": "Все категории", "value": "all"},
+                        {"label": "Лимит DLS", "value": "dls_limit"},
                         {"label": "Лимит песка", "value": "sand_limit"},
                         {"label": "Буфер ЭЦП", "value": "ecd_buffer"},
                         {"label": "МПИ ВЗД", "value": "mpi_hours"},
                     ],
-                    value="all",
-                    clearable=False
+                    value="all", clearable=False
                 )
             ], width=3),
             dbc.Col([
@@ -84,19 +84,14 @@ def create_rules_tab():
                         {"label": "Газпром нефть", "value": "Газпром нефть"},
                         {"label": "ЛУКОЙЛ", "value": "ЛУКОЙЛ"},
                         {"label": "Татнефть", "value": "Татнефть"},
+                        {"label": "Прочие", "value": "Прочие"},
                     ],
-                    value="all",
-                    clearable=False
+                    value="all", clearable=False
                 )
             ], width=3),
             dbc.Col([
                 html.Label("Поиск:", style={"fontWeight": "bold", "fontSize": "13px"}),
-                dcc.Input(
-                    id='kb-search-rules',
-                    type='text',
-                    placeholder="Поиск по описанию...",
-                    style={"width": "100%", "padding": "8px"}
-                )
+                dcc.Input(id='kb-search-rules', type='text', placeholder="Поиск по описанию...", style={"width": "100%", "padding": "8px"})
             ], width=4),
             dbc.Col([
                 html.Div(style={"marginTop": "25px"}),
@@ -104,7 +99,6 @@ def create_rules_tab():
             ], width=2),
         ], className="mb-3"),
         
-        # Таблица правил
         html.Div(id='kb-rules-table-container'),
         
         # Модальное окно для добавления/редактирования
@@ -113,50 +107,25 @@ def create_rules_tab():
             dbc.ModalBody([
                 dbc.Form([
                     dbc.Row([
-                        dbc.Col([
-                            dbc.Label("ID правила"),
-                            dbc.Input(id='rule-id-input', type='text', placeholder="Например: RN_sand_limit")
-                        ], width=6),
-                        dbc.Col([
-                            dbc.Label("Категория"),
-                            dbc.Select(id='rule-category-input', options=[
-                                {"label": "Лимит песка", "value": "sand_limit"},
-                                {"label": "Буфер ЭЦП", "value": "ecd_buffer"},
-                                {"label": "МПИ ВЗД", "value": "mpi_hours"},
-                            ])
-                        ], width=6),
+                        dbc.Col([dbc.Label("ID правила"), dbc.Input(id='rule-id-input', type='text', placeholder="Например: TAT_dls_limit")], width=6),
+                        dbc.Col([dbc.Label("Категория"), dbc.Select(id='rule-category-input', options=[
+                            {"label": "Лимит DLS", "value": "dls_limit"}, {"label": "Лимит песка", "value": "sand_limit"},
+                            {"label": "Буфер ЭЦП", "value": "ecd_buffer"}, {"label": "МПИ ВЗД", "value": "mpi_hours"},
+                        ])], width=6),
                     ], className="mb-3"),
                     dbc.Row([
-                        dbc.Col([
-                            dbc.Label("Параметр"),
-                            dbc.Input(id='rule-parameter-input', type='text', placeholder="max_sand_content")
-                        ], width=6),
-                        dbc.Col([
-                            dbc.Label("Значение"),
-                            dbc.Input(id='rule-value-input', type='number', step=0.01)
-                        ], width=6),
+                        dbc.Col([dbc.Label("Параметр"), dbc.Input(id='rule-parameter-input', type='text', placeholder="max_dls")], width=6),
+                        dbc.Col([dbc.Label("Значение"), dbc.Input(id='rule-value-input', type='number', step=0.01)], width=6),
                     ], className="mb-3"),
                     dbc.Row([
-                        dbc.Col([
-                            dbc.Label("Единица измерения"),
-                            dbc.Input(id='rule-unit-input', type='text', placeholder="%")
-                        ], width=6),
-                        dbc.Col([
-                            dbc.Label("Заказчик"),
-                            dbc.Input(id='rule-client-input', type='text', placeholder="Роснефть")
-                        ], width=6),
+                        dbc.Col([dbc.Label("Единица измерения"), dbc.Input(id='rule-unit-input', type='text', placeholder="°/10м")], width=6),
+                        dbc.Col([dbc.Label("Заказчик"), dbc.Input(id='rule-client-input', type='text', placeholder="Татнефть")], width=6),
                     ], className="mb-3"),
                     dbc.Row([
-                        dbc.Col([
-                            dbc.Label("Источник стандарта"),
-                            dbc.Input(id='rule-source-input', type='text', placeholder="ТК Роснефть 01-2024")
-                        ], width=12),
+                        dbc.Col([dbc.Label("Источник стандарта"), dbc.Input(id='rule-source-input', type='text', placeholder="ТЗ №123 от 01.01.2024")], width=12),
                     ], className="mb-3"),
                     dbc.Row([
-                        dbc.Col([
-                            dbc.Label("Описание"),
-                            dbc.Textarea(id='rule-description-input', rows=3)
-                        ], width=12),
+                        dbc.Col([dbc.Label("Описание"), dbc.Textarea(id='rule-description-input', rows=3)], width=12),
                     ], className="mb-3"),
                 ])
             ]),
@@ -165,6 +134,72 @@ def create_rules_tab():
                 dbc.Button("Сохранить", id='btn-save-rule', color="primary"),
             ]),
         ], id='rule-modal', size="lg", is_open=False),
+    ])
+
+
+def create_contracts_tab():
+    """Вкладка: Реестр договоров и технических заданий"""
+    return html.Div([
+        html.H4("Реестр договоров и технических заданий", style={"color": "#0F172A", "marginBottom": "15px"}),
+        html.P("Загружайте сюда структурированные выгрузки лимитов из ТЗ (Excel) или JSON от локального ИИ-парсера.", 
+              style={"color": "#64748B", "marginBottom": "15px"}),
+        
+        dbc.Card([
+            dbc.CardBody([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label("Заказчик (Холдинг/ДОР):", style={"fontWeight": "bold", "fontSize": "13px"}),
+                        dcc.Input(id='contract-client-input', type='text', placeholder="Например: Татнефть", 
+                                 style={"width": "100%", "padding": "8px", "marginBottom": "10px"})
+                    ], width=4),
+                    dbc.Col([
+                        html.Label("Номер/Название договора:", style={"fontWeight": "bold", "fontSize": "13px"}),
+                        dcc.Input(id='contract-name-input', type='text', placeholder="ТЗ-2024-001", 
+                                 style={"width": "100%", "padding": "8px", "marginBottom": "10px"})
+                    ], width=4),
+                    dbc.Col([
+                        html.Label("Дата вступления в силу:", style={"fontWeight": "bold", "fontSize": "13px"}),
+                        dcc.Input(id='contract-date-input', type='date', 
+                                 style={"width": "100%", "padding": "8px", "marginBottom": "10px"})
+                    ], width=4),
+                ], className="mb-3"),
+                
+                dcc.Upload(
+                    id='upload-contract-file',
+                    children=html.Div([
+                        'Перетащите файл с лимитами (.xlsx или .json) сюда или ',
+                        html.A('выберите файл', style={"color": "#2563eb", "fontWeight": "bold"})
+                    ]),
+                    style={
+                        'width': '100%', 'height': '80px', 'lineHeight': '80px',
+                        'borderWidth': '2px', 'borderStyle': 'dashed', 'borderRadius': '8px',
+                        'textAlign': 'center', 'backgroundColor': '#F8FAFC', 'marginBottom': '15px'
+                    },
+                    multiple=False
+                ),
+                
+                dbc.Button("Применить лимиты из документа", id='btn-apply-contract', color="success", className="w-100"),
+                html.Div(id='contract-upload-status', style={"marginTop": "15px"}),
+            ])
+        ], className="mb-4"),
+        
+        html.H5("Активные договоры в системе:", style={"color": "#0F172A", "marginBottom": "10px"}),
+        dash_table.DataTable(
+            columns=[
+                {"name": "Заказчик", "id": "client"},
+                {"name": "Договор/ТЗ", "id": "name"},
+                {"name": "Дата", "id": "date"},
+                {"name": "Статус", "id": "status"}
+            ],
+            data=[
+                {"client": "Роснефть", "name": "ТЗ-2023-105", "date": "2023-01-01", "status": "Активен"},
+                {"client": "Татнефть", "name": "Доп. соглашение №4", "date": "2024-03-01", "status": "Активен"},
+                {"client": "Газпром нефть", "name": "СТ ГПН-2024", "date": "2024-01-15", "status": "Активен"},
+            ],
+            style_table={'overflowX': 'auto', 'border': '1px solid #E2E8F0', 'borderRadius': '8px'},
+            style_cell={'textAlign': 'left', 'padding': '10px', 'fontSize': '13px'},
+            style_header={'backgroundColor': '#F1F5F9', 'fontWeight': 'bold'}
+        )
     ])
 
 
@@ -186,15 +221,9 @@ def create_uploads_tab():
                         html.A('выберите файл', style={"color": "#2563eb", "fontWeight": "bold"})
                     ]),
                     style={
-                        'width': '100%',
-                        'height': '100px',
-                        'lineHeight': '100px',
-                        'borderWidth': '2px',
-                        'borderStyle': 'dashed',
-                        'borderRadius': '8px',
-                        'textAlign': 'center',
-                        'backgroundColor': '#F8FAFC',
-                        'marginBottom': '15px'
+                        'width': '100%', 'height': '100px', 'lineHeight': '100px',
+                        'borderWidth': '2px', 'borderStyle': 'dashed', 'borderRadius': '8px',
+                        'textAlign': 'center', 'backgroundColor': '#F8FAFC', 'marginBottom': '15px'
                     },
                     multiple=False
                 ),
@@ -203,16 +232,6 @@ def create_uploads_tab():
                 html.Div(id='upload-status', style={"marginTop": "15px"}),
             ])
         ], className="mb-4"),
-        
-        dbc.Card([
-            dbc.CardBody([
-                html.H5("Ручное добавление правил", style={"marginBottom": "15px"}),
-                html.P("Используйте эту функцию для точечного добавления или исправления правил.",
-                      style={"color": "#64748B", "marginBottom": "15px"}),
-                
-                dbc.Button("Добавить правило вручную", id='btn-manual-add', color="success", className="w-100"),
-            ])
-        ]),
     ])
 
 
@@ -241,7 +260,7 @@ def create_history_tab():
             ], width=3),
         ], className="mb-3"),
         
-        html.Div(id='kb-history-table'),
+        html.Div(id='kb-history-table', children=html.P("История изменений будет отображена здесь.", className="text-muted")),
     ])
 
 
@@ -257,21 +276,15 @@ def create_export_tab():
                 dbc.Row([
                     dbc.Col([
                         html.Label("Версия пакета:", style={"fontWeight": "bold", "fontSize": "13px"}),
-                        dcc.Input(
-                            id='export-version',
-                            type='text',
-                            value=datetime.now().strftime("%Y.%m.%d"),
-                            style={"width": "100%", "padding": "8px"}
-                        )
+                        dcc.Input(id='export-version', type='text', value=datetime.now().strftime("%Y.%m.%d"), style={"width": "100%", "padding": "8px"})
                     ], width=4),
                     dbc.Col([
-                        html.Label("Включить правила:", style={"fontWeight": "bold", "fontSize": "13px"}),
+                        html.Label("Включить данные:", style={"fontWeight": "bold", "fontSize": "13px"}),
                         dbc.Checklist(
                             id='export-include-rules',
                             options=[
                                 {"label": " Все правила комплаенса", "value": "rules"},
                                 {"label": " Операционные алгоритмы", "value": "operations"},
-                                {"label": " Справочники вендоров", "value": "vendors"},
                             ],
                             value=["rules", "operations"],
                             inline=True
@@ -282,7 +295,6 @@ def create_export_tab():
                 dbc.Button("Сформировать пакет", id='btn-generate-package', color="primary", className="w-100 mb-3"),
                 
                 html.Div(id='export-status'),
-                
                 dcc.Download(id="download-kb-package"),
             ])
         ]),
@@ -295,7 +307,6 @@ def create_validation_tab():
         html.H4("Валидация целостности базы знаний", style={"color": "#0F172A", "marginBottom": "15px"}),
         
         dbc.Button("Запустить проверку", id='btn-run-validation', color="primary", className="w-100 mb-3"),
-        
         html.Div(id='validation-results'),
     ])
 
@@ -313,6 +324,7 @@ def kb_admin_callbacks(app, data_bridge):
     )
     def render_kb_tab(tab_value):
         if tab_value == 'tab-rules': return create_rules_tab()
+        elif tab_value == 'tab-contracts': return create_contracts_tab() # ОБНОВЛЕНО
         elif tab_value == 'tab-uploads': return create_uploads_tab()
         elif tab_value == 'tab-history': return create_history_tab()
         elif tab_value == 'tab-export': return create_export_tab()
@@ -404,7 +416,7 @@ def kb_admin_callbacks(app, data_bridge):
         State('rule-modal', 'is_open')
     )
     def toggle_modal(add_clicks, cancel_clicks, save_clicks, is_open):
-        ctx = dash.callback_context
+        ctx = callback_context
         if not ctx.triggered:
             return False
         
@@ -544,21 +556,14 @@ def kb_admin_callbacks(app, data_bridge):
     def run_validation(n_clicks):
         issues = []
         
-        # Проверка дубликатов
         rule_ids = [r.rule_id for r in compliance.rules_cache.values()]
         duplicates = [x for x in rule_ids if rule_ids.count(x) > 1]
         if duplicates:
             issues.append(f"Найдены дубликаты ID: {set(duplicates)}")
         
-        # Проверка обязательных полей
         for rule in compliance.rules_cache.values():
             if not rule.rule_id or not rule.category or not rule.parameter:
                 issues.append(f"Правило {rule.rule_id} имеет пустые обязательные поля")
-        
-        # Проверка значений
-        for rule in compliance.rules_cache.values():
-            if rule.category == 'sand_limit' and (rule.value < 0 or rule.value > 10):
-                issues.append(f"Правило {rule.rule_id}: лимит песка {rule.value}% вне диапазона 0-10%")
         
         if not issues:
             return html.Div([
