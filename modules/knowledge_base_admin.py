@@ -3,15 +3,17 @@
 Интерфейс для инженера по НТД:
 - Просмотр и редактирование правил комплаенса
 - Реестр договоров и технических заданий (ТЗ)
-- Загрузка обновлений от локального ИИ-парсера
+- Запуск локального ИИ-парсера документов
+- Загрузка обновлений от парсера
 - Управление версиями и историей изменений
 - Экспорт пакетов для синхронизации с буровыми
 - Валидация целостности данных
 """
 import json
-import pandas as pd
-from datetime import datetime
+import subprocess
+import sys
 from pathlib import Path
+from datetime import datetime
 from typing import Dict, List
 from dash import html, dcc, Input, Output, State, callback_context
 import dash_bootstrap_components as dbc
@@ -42,7 +44,7 @@ def create_kb_admin_layout():
         # Вкладки управления
         dcc.Tabs(id='kb-admin-tabs', value='tab-rules', className='custom-tabs', children=[
             dcc.Tab(label='Правила комплаенса', value='tab-rules'),
-            dcc.Tab(label='Договоры и ТЗ', value='tab-contracts'), # НОВАЯ ВКЛАДКА
+            dcc.Tab(label='Договоры и ТЗ', value='tab-contracts'),
             dcc.Tab(label='Загрузка обновлений', value='tab-uploads'),
             dcc.Tab(label='История изменений', value='tab-history'),
             dcc.Tab(label='Экспорт для буровых', value='tab-export'),
@@ -58,7 +60,6 @@ def create_rules_tab():
     return html.Div([
         html.H4("Правила комплаенса (ЛНД, ТК, СТО)", style={"color": "#0F172A", "marginBottom": "15px"}),
         
-        # Фильтры
         dbc.Row([
             dbc.Col([
                 html.Label("Категория:", style={"fontWeight": "bold", "fontSize": "13px"}),
@@ -101,7 +102,6 @@ def create_rules_tab():
         
         html.Div(id='kb-rules-table-container'),
         
-        # Модальное окно для добавления/редактирования
         dbc.Modal([
             dbc.ModalHeader("Добавить/Редактировать правило"),
             dbc.ModalBody([
@@ -204,14 +204,53 @@ def create_contracts_tab():
 
 
 def create_uploads_tab():
-    """Вкладка: Загрузка обновлений"""
+    """Вкладка: Загрузка обновлений + запуск парсера"""
     return html.Div([
         html.H4("Загрузка обновлений базы знаний", style={"color": "#0F172A", "marginBottom": "15px"}),
         
+        # БЛОК 1: Запуск локального ИИ-парсера
         dbc.Card([
+            dbc.CardHeader(html.H5("🤖 Локальный ИИ-парсер документов", style={"margin": "0"})),
             dbc.CardBody([
-                html.H5("Загрузка от локального ИИ-парсера", style={"marginBottom": "15px"}),
-                html.P("Загрузите JSON-файл, сгенерированный офисным парсером после обработки новых ЛНД.",
+                html.P("Автоматическое извлечение лимитов из PDF-документов (ТЗ, договоры) с помощью локального ИИ (Ollama + Qwen2.5).",
+                      style={"color": "#64748B", "marginBottom": "15px"}),
+                
+                html.Div([
+                    html.H6("Инструкция:", style={"marginBottom": "10px"}),
+                    html.Ol([
+                        html.Li("Положите PDF-файлы в папку: ", style={"marginBottom": "5px"}),
+                        html.Code("data/input_docs/", style={"backgroundColor": "#F1F5F9", "padding": "2px 6px", "borderRadius": "4px"}),
+                        html.Li("Нажмите кнопку ниже для запуска парсера", style={"marginBottom": "5px"}),
+                        html.Li("Дождитесь завершения обработки (30-60 сек на документ)", style={"marginBottom": "5px"}),
+                        html.Li("Результат будет автоматически загружен в базу знаний", style={"marginBottom": "5px"}),
+                    ], style={"fontSize": "13px", "paddingLeft": "20px"})
+                ], style={"backgroundColor": "#F8FAFC", "padding": "15px", "borderRadius": "6px", "marginBottom": "15px"}),
+                
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Button(" Запустить парсер", id='btn-run-parser', color="primary", className="w-100", size="lg"),
+                    ], width=6),
+                    dbc.Col([
+                        dbc.Button(" Открыть папку input_docs", id='btn-open-folder', color="secondary", className="w-100", size="lg"),
+                    ], width=6),
+                ], className="mb-3"),
+                
+                html.Div(id='parser-status', style={"marginTop": "15px"}),
+                
+                # Лог обработки
+                html.Div(id='parser-log', style={
+                    "backgroundColor": "#1E293B", "color": "#10B981", "padding": "15px",
+                    "borderRadius": "6px", "fontFamily": "monospace", "fontSize": "12px",
+                    "maxHeight": "300px", "overflowY": "auto", "display": "none"
+                }),
+            ])
+        ], className="mb-4"),
+        
+        # БЛОК 2: Ручная загрузка JSON
+        dbc.Card([
+            dbc.CardHeader(html.H5(" Ручная загрузка JSON от парсера", style={"margin": "0"})),
+            dbc.CardBody([
+                html.P("Если вы обработали документы на другом компьютере, загрузите готовый JSON-файл здесь.",
                       style={"color": "#64748B", "marginBottom": "15px"}),
                 
                 dcc.Upload(
@@ -228,7 +267,7 @@ def create_uploads_tab():
                     multiple=False
                 ),
                 
-                dbc.Button("Обработать и применить", id='btn-process-upload', color="primary", className="w-100"),
+                dbc.Button("Обработать и применить", id='btn-process-upload', color="success", className="w-100"),
                 html.Div(id='upload-status', style={"marginTop": "15px"}),
             ])
         ], className="mb-4"),
@@ -324,7 +363,7 @@ def kb_admin_callbacks(app, data_bridge):
     )
     def render_kb_tab(tab_value):
         if tab_value == 'tab-rules': return create_rules_tab()
-        elif tab_value == 'tab-contracts': return create_contracts_tab() # ОБНОВЛЕНО
+        elif tab_value == 'tab-contracts': return create_contracts_tab()
         elif tab_value == 'tab-uploads': return create_uploads_tab()
         elif tab_value == 'tab-history': return create_history_tab()
         elif tab_value == 'tab-export': return create_export_tab()
@@ -468,7 +507,139 @@ def kb_admin_callbacks(app, data_bridge):
         
         return html.Div(f"✅ Правило {rule_id} успешно добавлено!", style={"color": "#10B981", "fontWeight": "bold"})
     
-    # 6. Загрузка обновлений от ИИ-парсера
+    # 6. ЗАПУСК ЛОКАЛЬНОГО ИИ-ПАРСЕРА
+    @app.callback(
+        [Output('parser-status', 'children'),
+         Output('parser-log', 'children'),
+         Output('parser-log', 'style')],
+        Input('btn-run-parser', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def run_local_parser(n_clicks):
+        if not n_clicks:
+            return html.Div(), "", {"display": "none"}
+        
+        # Проверяем наличие папки input_docs
+        project_root = Path(__file__).parent.parent
+        input_dir = project_root / "data" / "input_docs"
+        
+        if not input_dir.exists():
+            input_dir.mkdir(parents=True, exist_ok=True)
+            return (
+                dbc.Alert("📁 Папка input_docs создана. Положите туда PDF-файлы и запустите парсер снова.", color="warning"),
+                "",
+                {"display": "block"}
+            )
+        
+        pdf_files = list(input_dir.glob("*.pdf"))
+        if not pdf_files:
+            return (
+                dbc.Alert(f"⚠️ Папка input_docs пуста. Положите PDF-файлы в: {input_dir}", color="warning"),
+                "",
+                {"display": "block"}
+            )
+        
+        # Запускаем парсер через subprocess
+        parser_script = project_root / "tools" / "local_ai_parser.py"
+        
+        if not parser_script.exists():
+            return (
+                dbc.Alert("❌ Скрипт парсера не найден: tools/local_ai_parser.py", color="danger"),
+                "",
+                {"display": "block"}
+            )
+        
+        try:
+            # Запуск парсера
+            result = subprocess.run(
+                [sys.executable, str(parser_script), "--folder", str(input_dir)],
+                capture_output=True,
+                text=True,
+                timeout=600  # 10 минут максимум
+            )
+            
+            # Формируем лог
+            log_text = f"=== ЗАПУСК ПАРСЕРА ===\n"
+            log_text += f"Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            log_text += f"PDF файлов: {len(pdf_files)}\n\n"
+            log_text += result.stdout
+            if result.stderr:
+                log_text += f"\n=== ОШИБКИ ===\n{result.stderr}"
+            
+            # Проверяем результат
+            if result.returncode == 0:
+                # Парсер отработал успешно, теперь загружаем результат
+                output_file = project_root / "data" / "kb_update.json"
+                
+                if output_file.exists():
+                    with open(output_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    rules_added = 0
+                    for rule_data in data.get('rules', []):
+                        from utils.compliance_engine import ComplianceRule
+                        try:
+                            rule = ComplianceRule(**rule_data)
+                            compliance.rules_cache[rule.rule_id] = rule
+                            rules_added += 1
+                        except Exception as e:
+                            log_text += f"\n⚠️ Ошибка добавления правила {rule_data.get('rule_id', 'unknown')}: {e}"
+                    
+                    compliance.save_rules()
+                    
+                    status = dbc.Alert(
+                        f"✅ Парсер завершил работу! Загружено {rules_added} правил из {len(pdf_files)} документов.",
+                        color="success"
+                    )
+                else:
+                    status = dbc.Alert("⚠️ Парсер отработал, но файл kb_update.json не создан.", color="warning")
+            else:
+                status = dbc.Alert(f"❌ Ошибка парсера (код {result.returncode}). Проверьте лог ниже.", color="danger")
+            
+            return status, log_text.replace('\n', '<br>'), {"display": "block"}
+        
+        except subprocess.TimeoutExpired:
+            return (
+                dbc.Alert("⏱️ Парсер не завершился за 10 минут. Возможно, Ollama недоступна.", color="danger"),
+                "Таймаут выполнения",
+                {"display": "block"}
+            )
+        except Exception as e:
+            return (
+                dbc.Alert(f"❌ Критическая ошибка: {str(e)}", color="danger"),
+                str(e),
+                {"display": "block"}
+            )
+    
+    # 7. Открыть папку input_docs
+    @app.callback(
+        Output('parser-status', 'children', allow_duplicate=True),
+        Input('btn-open-folder', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def open_input_folder(n_clicks):
+        if not n_clicks:
+            return html.Div()
+        
+        import platform
+        project_root = Path(__file__).parent.parent
+        input_dir = project_root / "data" / "input_docs"
+        input_dir.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            if platform.system() == 'Windows':
+                import os
+                os.startfile(str(input_dir))
+            elif platform.system() == 'Darwin':
+                subprocess.Popen(['open', str(input_dir)])
+            else:
+                subprocess.Popen(['xdg-open', str(input_dir)])
+            
+            return dbc.Alert(f"📁 Папка открыта: {input_dir}", color="info")
+        except Exception as e:
+            return dbc.Alert(f"⚠️ Не удалось открыть папку: {e}", color="warning")
+    
+    # 8. Загрузка обновлений от ИИ-парсера (ручная)
     @app.callback(
         Output('upload-status', 'children'),
         Input('btn-process-upload', 'n_clicks'),
@@ -503,9 +674,9 @@ def kb_admin_callbacks(app, data_bridge):
                           style={"color": "#10B981", "fontWeight": "bold"})
         
         except Exception as e:
-            return html.Div(f"❌ Ошибка обработки файла: {str(e)}", style={"color": "#EF4444"})
+            return html.Div(f" Ошибка обработки файла: {str(e)}", style={"color": "#EF4444"})
     
-    # 7. Экспорт пакета для буровых
+    # 9. Экспорт пакета для буровых
     @app.callback(
         Output('download-kb-package', 'data'),
         Output('export-status', 'children'),
@@ -547,7 +718,7 @@ def kb_admin_callbacks(app, data_bridge):
             html.Div(f"✅ Пакет {filename} успешно сформирован!", style={"color": "#10B981", "fontWeight": "bold"})
         )
     
-    # 8. Валидация данных
+    # 10. Валидация данных
     @app.callback(
         Output('validation-results', 'children'),
         Input('btn-run-validation', 'n_clicks'),
