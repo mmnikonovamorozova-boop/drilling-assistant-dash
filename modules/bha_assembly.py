@@ -26,8 +26,36 @@ sample_bha_data = pd.DataFrame([
 ])
 
 # ============================================================================
-# ЛЕЙАУТ ВКЛАДОК
+# ЛЕЙАУТ МОДУЛЯ
 # ============================================================================
+
+def bha_assembly_layout():
+    """Основной макет модуля сборки КНБК (вызывается из app.py)"""
+    return html.Div([
+        dbc.Row([
+            dbc.Col(width=9, children=[
+                dcc.Tabs(
+                    id='main-tabs',
+                    value='tab-input',
+                    className='custom-tabs',
+                    children=[
+                        dcc.Tab(label='1. Входной контроль элементов', value='tab-input'),
+                        dcc.Tab(label='2. Визуальная схема и стыки', value='tab-visual'),
+                        dcc.Tab(label='3. Расчет УМК и натяжения', value='tab-umk'),
+                        dcc.Tab(label='4. Живой склад', value='tab-warehouse'),
+                        dcc.Tab(label='5. Оценка рисков', value='tab-risks'),
+                    ]
+                ),
+                html.Div(id='tabs-content', className="mt-3")
+            ]),
+            dbc.Col(width=3, children=[
+                html.Div(className="right-panel", children=[
+                    html.Div(className="panel-title", children="КОНТРОЛЬ ИЗНОСА ВЗД"),
+                    html.Div(id='vzd-panel-content')
+                ])
+            ])
+        ])
+    ])
 
 def get_input_control_tab():
     """Вкладка 1: Входной контроль (Таблица элементов)"""
