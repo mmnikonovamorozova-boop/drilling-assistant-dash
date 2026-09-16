@@ -2,6 +2,7 @@
 МОДУЛЬ: СБОРКА КНБК И ВХОДНОЙ КОНТРОЛЬ
 Объединяет входной контроль элементов и проверку ВЗД.
 """
+from modules.warehouse import create_warehouse_upload_section, create_alternative_suggestion, warehouse_callbacks
 from modules.ai_advisor import create_ai_advisor_panel, ai_advisor_callbacks
 from modules.bha_umk_enhanced import create_umk_enhanced_panel, umk_enhanced_callbacks
 from modules.bha_joints import get_joints_table_component
