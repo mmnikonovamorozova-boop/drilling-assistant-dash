@@ -104,3 +104,7 @@ elif pathname == '/office-sync':
         html.H2("Центральный узел синхронизации", className="mb-4"),
         create_office_sync_panel()
     ])
+elif pathname == '/mud':
+    return html.Div([
+        create_mud_control_layout()
+    ])
