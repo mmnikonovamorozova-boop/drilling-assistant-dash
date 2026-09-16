@@ -1,0 +1,5 @@
+paddleocr==2.7.0
+paddlepaddle==2.5.0  # CPU версия (или paddlepaddle-gpu для GPU)
+camelot-py==0.11.0
+pymupdf==1.23.0  # fitz
+openai==1.12.0  # Для работы с Ollama
