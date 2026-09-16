@@ -45,6 +45,7 @@ app.layout = html.Div([
                         dcc.Tab(label='1. Входной контроль элементов', value='tab-input'),
                         dcc.Tab(label='2. Визуальная схема и стыки', value='tab-visual'),
                         dcc.Tab(label='3. Расчет УМК и натяжения', value='tab-umk'),
+                        dcc.Tab(label='4. Живой склад', value='tab-warehouse'),  
                     ]
                 ),
                 # Сюда будет подгружаться контент вкладок
