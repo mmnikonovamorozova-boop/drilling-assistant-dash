@@ -35,3 +35,4 @@ def create_sidebar():
                    color="danger", 
                    className="w-100 mx-3")
     ], className="vh-100")
+dbc.NavLink("💾 Синхронизация", href="/sync", active="exact"),
