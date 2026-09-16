@@ -2,6 +2,8 @@
 МОДУЛЬ: СБОРКА КНБК И ВХОДНОЙ КОНТРОЛЬ
 Объединяет входной контроль элементов и проверку ВЗД.
 """
+
+from modules.bha_joints import get_joints_table_component
 from modules.bha_visual import create_bha_visualization
 from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
@@ -60,25 +62,30 @@ def get_input_control_tab():
     ])
 
 def get_visual_tab():
-    """Вкладка 2: Визуальная схема (Plotly)"""
+    """Вкладка 2: Визуальная схема + Таблица стыков"""
     fig = create_bha_visualization()
     
     return html.Div([
-        html.H4("Визуальная схема КНБК (Топология)", style={"color": "#0f172a", "marginBottom": "15px"}),
-        # Вставляем интерактивный график
+        # Заголовок вкладки
+        html.H4("Визуальная схема КНБК (Топология)", 
+                style={"color": "#0f172a", "marginBottom": "15px", "borderBottom": "2px solid #cbd5e1", "paddingBottom": "10px"}),
+        
+        # Интерактивный график КНБК
         dcc.Graph(
             id='bha-visual-graph', 
             figure=fig,
-            config={'displayModeBar': False} # Убираем лишние кнопки Plotly для чистоты
+            config={'displayModeBar': False}
         ),
         
-        html.Hr(style={"borderColor": "#cbd5e1"}),
+        html.Hr(style={"borderColor": "#cbd5e1", "margin": "25px 0"}),
         
-        html.H5("Таблица стыков и перепадов диаметров", style={"color": "#0f172a", "marginTop": "20px"}),
-        # Здесь потом будет детальная таблица стыков
-        html.Div("Данные по стыкам загружаются...", style={"color": "#64748b"})
-    ]) 
-
+        # Таблица стыков
+        html.H5("Таблица стыков и перепадов диаметров", 
+                style={"color": "#0f172a", "marginTop": "20px", "marginBottom": "15px"}),
+        
+        get_joints_table_component(),
+    ])
+    
 def get_umk_tab():
     """Вкладка 3: УМК (Заглушка)"""
     return html.Div([
