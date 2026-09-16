@@ -3,108 +3,106 @@
 Drilling Assistant - Industrial Dashboard
 """
 import dash
-from dash import html, dcc
+from dash import html, dcc, Input, Output
 import dash_bootstrap_components as dbc
-from modules.bha_assembly import bha_assembly_layout, bha_assembly_callbacks
+
 from utils.data_bridge import DataBridge
+from components.sidebar import create_sidebar
+from modules.auth import auth_layout, auth_callbacks
+from modules.bha_assembly import bha_assembly_layout, bha_assembly_callbacks
 from modules.mud_control import create_mud_control_layout, mud_control_callbacks
-from modules.mud_control import create_mud_control_layout, mud_control_callbacks
+from modules.sync_interface import create_sync_panel, sync_callbacks
 
+# 1. Инициализация приложения (БЫЛО ПРОПУЩЕНО)
+app = dash.Dash(
+    __name__, 
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    suppress_callback_exceptions=True
+)
+server = app.server
 
+# Глобальный шлюз данных
 data_bridge = DataBridge()
 
-# --- МАКЕТ ПРИЛОЖЕНИЯ ---
+# 2. МАКЕТ ПРИЛОЖЕНИЯ
 app.layout = html.Div([
+    # Хранилище сессии и роутер
+    dcc.Store(id='session-data', storage_type='session'),
+    dcc.Location(id='url', refresh=False),
     
-    # 1. ВЕРХНЯЯ ШАПКА (HEADER)
-    html.Div(className="app-header", children=[
+    # Верхняя шапка (скрывается на странице авторизации)
+    html.Div(id='app-header', className="app-header", children=[
         html.Div([
-            html.H1("СИСТЕМА КОНТРОЛЯ СБОРКИ КНБК"),
-            html.Div(className="meta-info", children="СТО ИНТИ S.QS.7 | Модуль: Виртуальный ротор и Входной контроль")
+            html.H1("СИСТЕМА КОНТРОЛЯ СБОРКИ КНБК", style={"fontSize": "20px", "margin": "0"}),
+            html.Div("СТО ИНТИ S.QS.7 | Промышленный стандарт", className="meta-info", style={"fontSize": "13px", "color": "#94a3b8"})
         ]),
         html.Div(className="meta-info", children=[
             html.Span("Инженер: ", style={"color": "#fff"}),
-            html.Span(id='header-engineer', children="Иванов И.И."),
+            html.Span(id='header-engineer', children="Не авторизован"),
             html.Span(" | Скважина: ", style={"color": "#fff", "marginLeft": "15px"}),
-            html.Span(id='header-well', children="Приобское №101"),
+            html.Span(id='header-well', children="---"),
         ])
     ]),
 
-    # 2. ОСНОВНОЙ КОНТЕЙНЕР
+    # Основной контейнер
     dbc.Container(fluid=True, className="mt-4", children=[
         dbc.Row([
+            # Боковое меню
+            dbc.Col(create_sidebar(), width=2, className="bg-light border-end", style={"minHeight": "100vh"}),
             
-            # ЛЕВАЯ/ЦЕНТРАЛЬНАЯ ЧАСТЬ (ВКЛАДКИ И ТАБЛИЦЫ)
-            dbc.Col(width=9, children=[
-                dcc.Tabs(
-                    id='main-tabs',
-                    value='tab-input',
-                    className='custom-tabs',
-                    children=[
-                        dcc.Tab(label='1. Входной контроль элементов', value='tab-input'),
-                        dcc.Tab(label='2. Визуальная схема и стыки', value='tab-visual'),
-                        dcc.Tab(label='3. Расчет УМК и натяжения', value='tab-umk'),
-                        dcc.Tab(label='4. Живой склад', value='tab-warehouse'),  
-                    ]
-                ),
-                # Сюда будет подгружаться контент вкладок
-                html.Div(id='tabs-content', className="mt-3")
-            ]),
-
-            # ПРАВАЯ ПАНЕЛЬ (КОНТРОЛЬ ВЗД - ВСЕГДА НА ВИДУ)
-            dbc.Col(width=3, children=[
-                html.Div(className="right-panel", children=[
-                    html.Div(className="panel-title", children="КОНТРОЛЬ ИЗНОСА ВЗД"),
-                    html.Div(id='vzd-panel-content') # Контент панели ВЗД
-                ])
+            # Основная область контента (меняется динамически)
+            dbc.Col(width=10, children=[
+                html.Div(id='page-content')
             ])
         ])
     ]),
 
-    # 3. НИЖНЯЯ ПАНЕЛЬ ДЕЙСТВИЙ (ACTION BAR)
-    html.Div(className="bottom-action-bar", children=[
+    # Нижняя панель действий (появляется только в рабочих модулях)
+    html.Div(id='bottom-action-bar', className="bottom-action-bar", children=[
         html.Div(className="action-metrics", children=[
-            html.Div([
-                html.Span("РИСК РЕЙСА: ", style={"color": "#94a3b8"}),
-                html.Span(id='metric-risk', children="23%", style={"color": "#16a34a", "fontWeight": "bold"})
-            ]),
-            html.Div([
-                html.Span("СТАТУС ВЗД: ", style={"color": "#94a3b8"}),
-                html.Span(id='metric-vzd-status', children="ОТБРАКОВАН", style={"color": "#dc2626", "fontWeight": "bold"})
-            ]),
-            html.Div([
-                html.Span("УСИЛИЕ НАТЯЖЕНИЯ: ", style={"color": "#94a3b8"}),
-                html.Span(id='metric-tension', children="6.38 т", style={"color": "#fff", "fontWeight": "bold"})
-            ]),
+            html.Div([html.Span("РИСК РЕЙСА: ", style={"color": "#94a3b8"}), html.Span(id='metric-risk', children="23%", style={"color": "#16a34a", "fontWeight": "bold"})]),
+            html.Div([html.Span("СТАТУС ВЗД: ", style={"color": "#94a3b8"}), html.Span(id='metric-vzd-status', children="ОЖИДАНИЕ", style={"color": "#6c757d", "fontWeight": "bold"})]),
         ]),
         html.Div(children=[
             html.Button("Сформировать акт СМК", className="action-btn btn-primary", style={"marginRight": "10px"}),
-            html.Button("Запросить замену ВЗД", className="action-btn btn-danger", style={"marginRight": "10px"}),
-            html.Button("Ручной ввод данных", className="action-btn btn-outline"),
+            html.Button("Экспорт данных", className="action-btn btn-outline"),
         ])
-    ])
+    ], style={"display": "none"}) # По умолчанию скрыта
 ])
 
-# Регистрируем callback'и модуля
+# 3. РОУТИНГ (ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ)
+@app.callback(
+    [Output('page-content', 'children'),
+     Output('app-header', 'style'),
+     Output('bottom-action-bar', 'style')],
+    Input('url', 'pathname')
+)
+def display_page(pathname):
+    if pathname == '/':
+        # Страница авторизации: скрываем шапку и нижнюю панель
+        return auth_layout(), {"display": "none"}, {"display": "none"}
+    
+    elif pathname == '/bha':
+        return bha_assembly_layout(), {"display": "flex"}, {"display": "flex"}
+    
+    elif pathname == '/mud':
+        return create_mud_control_layout(), {"display": "flex"}, {"display": "none"}
+    
+    elif pathname == '/compliance':
+        return html.Div([html.H3("Модуль Комплаенса и ЛНД", className="mt-4"), 
+                         html.P("Интерфейс в разработке. Здесь будет матрица ответственности и чек-листы.")]), {"display": "flex"}, {"display": "none"}
+    
+    elif pathname == '/sync':
+        return create_sync_panel(), {"display": "flex"}, {"display": "none"}
+    
+    else:
+        return html.Div([html.H3("404: Страница не найдена", className="mt-4")]), {"display": "flex"}, {"display": "none"}
+
+# 4. РЕГИСТРАЦИЯ CALLBACK'ов
+auth_callbacks(app, data_bridge)
 bha_assembly_callbacks(app, data_bridge)
+mud_control_callbacks(app, data_bridge)
+sync_callbacks(app, data_bridge)
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='127.0.0.1', port=8050)
-elif pathname == '/sync':
-    from modules.sync_interface import create_sync_panel
-    return html.Div([
-        html.H2("Синхронизация данных", className="mb-4"),
-        create_sync_panel()
-    ])
-mud_control_callbacks(app, data_bridge)
-elif pathname == '/office-sync':
-    from modules.office_sync_interface import create_office_sync_panel
-    return html.Div([
-        html.H2("Центральный узел синхронизации", className="mb-4"),
-        create_office_sync_panel()
-    ])
-elif pathname == '/mud':
-    return html.Div([
-        create_mud_control_layout()
-    ])
-mud_control_callbacks(app, data_bridge)
