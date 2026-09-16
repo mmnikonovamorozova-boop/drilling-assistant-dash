@@ -107,3 +107,4 @@ elif pathname == '/mud':
     return html.Div([
         create_mud_control_layout()
     ])
+mud_control_callbacks(app, data_bridge)
