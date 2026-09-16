@@ -2,7 +2,7 @@
 МОДУЛЬ: СБОРКА КНБК И ВХОДНОЙ КОНТРОЛЬ
 Объединяет входной контроль элементов и проверку ВЗД.
 """
-
+from modules.bha_umk import get_umk_tab, umk_callbacks
 from modules.bha_joints import get_joints_table_component
 from modules.bha_visual import create_bha_visualization
 from dash import html, dcc, Input, Output, State
