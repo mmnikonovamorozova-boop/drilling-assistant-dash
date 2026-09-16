@@ -1,6 +1,7 @@
 """
 БОКОВОЕ МЕНЮ НАВИГАЦИИ
 Строгий промышленный интерфейс
+Drilling Assistant - все модули системы
 """
 from dash import html
 import dash_bootstrap_components as dbc
@@ -17,8 +18,11 @@ def create_sidebar():
             dbc.NavLink("Вход в систему", href="/", active="exact"),
             dbc.NavLink("Сборка КНБК и ВЗД", href="/bha", active="exact"),
             dbc.NavLink("Контроль растворов", href="/mud", active="exact"),
+            dbc.NavLink("Прогноз траектории", href="/trajectory", active="exact"),
             dbc.NavLink("Комплаенс и ЛНД", href="/compliance", active="exact"),
-            dbc.NavLink("Синхронизация данных", href="/sync", active="exact"),
+            dbc.NavLink("Демо: Телеметрия", href="/telemetry-demo", active="exact"),
+            dbc.NavLink("Управление БЗ", href="/kb-admin", active="exact"),
+            dbc.NavLink("Синхронизация", href="/sync", active="exact"),
         ], vertical=True, pills=True, className="px-3"),
         
         html.Hr(className="my-4"),
