@@ -37,3 +37,4 @@ def create_sidebar():
     ], className="vh-100")
 dbc.NavLink("💾 Синхронизация", href="/sync", active="exact"),
 dbc.NavLink("🏢 Офисная синхронизация", href="/office-sync", active="exact"),
+dbc.NavLink(" Контроль растворов", href="/mud", active="exact"),
