@@ -127,6 +127,8 @@ def get_vzd_panel():
 # Регистрируем callback'и модуля УМК
     umk_enhanced_callbacks(app, data_bridge)
     ai_advisor_callbacks(app, data_bridge)
+# Регистрируем callback'и модуля склада
+    warehouse_callbacks(app, data_bridge)
 def bha_assembly_callbacks(app, data_bridge):
     
     # 1. Переключение вкладок
@@ -134,14 +136,16 @@ def bha_assembly_callbacks(app, data_bridge):
         Output('tabs-content', 'children'),
         Input('main-tabs', 'value')
     )
-    def render_tab_content(tab_value):
-        if tab_value == 'tab-input':
-            return get_input_control_tab()
-        elif tab_value == 'tab-visual':
-            return get_visual_tab()
-        elif tab_value == 'tab-umk':
-            return get_umk_tab()
-        return html.Div("Выберите вкладку")
+def render_tab_content(tab_value):
+    if tab_value == 'tab-input':
+        return get_input_control_tab()
+    elif tab_value == 'tab-visual':
+        return get_visual_tab()
+    elif tab_value == 'tab-umk':
+        return get_umk_tab()
+    elif tab_value == 'tab-warehouse':  # НОВАЯ ВКЛАДКА
+        return create_warehouse_upload_section()
+    return html.Div("Выберите вкладку")
 
     # 2. Инициализация правой панели при загрузке
     @app.callback(
