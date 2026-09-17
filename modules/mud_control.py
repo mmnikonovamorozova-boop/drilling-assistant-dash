@@ -31,7 +31,7 @@ def get_client_criteria(client_name: str) -> Dict:
     sand_limit, sand_unit, sand_source = compliance.get_limit(client_name, 'sand_limit', 'max_sand_content', default_value=0.5)
     ecd_buffer, ecd_unit, ecd_source = compliance.get_limit(client_name, 'ecd_buffer', 'min_ecd_buffer', default_value=0.025)
     
-    colors = {"Роснефть": "#EF4444", "Газпром нефть": "#3B82F6", "ЛУКОЙЛ": "#10B981", "НОВАТЭК": "#F59E0B", "Татнефть": "#8B5CF6"}
+    colors = {"Роснефть": "#EF4444", "Газпром нефть": "#3B82F6", "ЛУКОЙЛ": "#10B981", "НОВАТЭК": "#F59E0B"}
     display_name = client_name if client_name not in ["*", "Прочие"] else "Стандартный регламент РД"
     
     return {
@@ -43,21 +43,38 @@ def get_client_criteria(client_name: str) -> Dict:
 
 @dataclass
 class MudParameters:
-    density: float; plastic_viscosity: float; yield_stress: float; sand_content: float
-    mud_type: str; flow_rate: float; rop: float
+    density: float
+    plastic_viscosity: float
+    yield_stress: float
+    sand_content: float
+    mud_type: str
+    flow_rate: float
+    rop: float
 
 @dataclass
 class WellGeometry:
-    tvd: float; hole_diameter: float; pipe_diameter: float; fracture_gradient: float; dls: float = 0.0
+    tvd: float
+    hole_diameter: float
+    pipe_diameter: float
+    fracture_gradient: float
+    dls: float = 0.0
 
 @dataclass
 class VZDParameters:
-    vendor: str; region: str; current_hours: float; mpi_hours: float = 200.0
-    sand_pct: float = 0.0; temp_c: float = 90.0; aggressiveness: float = 1.0; dls: float = 0.0
+    vendor: str
+    region: str
+    current_hours: float
+    mpi_hours: float = 200.0
+    sand_pct: float = 0.0
+    temp_c: float = 90.0
+    aggressiveness: float = 1.0
+    dls: float = 0.0
 
 class HerschelBulkleyCalculator:
     def __init__(self, mud: MudParameters, well: WellGeometry):
-        self.mud = mud; self.well = well; self.validation_errors: List[str] = []
+        self.mud = mud
+        self.well = well
+        self.validation_errors: List[str] = []
     
     def validate_inputs(self) -> bool:
         self.validation_errors = []
@@ -142,7 +159,6 @@ class VZDWearPredictor:
     def generate_training_data(self, n_samples: int = 3000) -> pd.DataFrame:
         np.random.seed(42)
         vendors = np.random.choice(["Радиус-Сервис", "ВНИИБТ-БИ", "Зарубежный импорт"], n_samples)
-        # ДОБАВЛЕНО: Волго-Урал в список регионов
         regions = np.random.choice(["ХМАО", "ЯНАО", "Восточная Сибирь", "Волго-Урал"], n_samples)
         sand = np.random.uniform(0.1, 1.2, n_samples)
         temp = np.random.uniform(60, 130, n_samples)
@@ -175,9 +191,12 @@ def create_mud_control_layout():
     return html.Div([
         html.Div([
             html.H2("Цифровой контроль параметров бурового раствора", style={"color": "white", "margin": "0"}),
-            html.P("Методика контроля и оценки абразивного износа эластомеров | СТО ИНТИ S.100.3", style={"color": "#94A3B8", "margin": "5px 0 0 0", "fontSize": "14px"})
+            html.P("Методика контроля и оценки абразивного износа эластомеров | СТО ИНТИ S.100.3", 
+                  style={"color": "#94A3B8", "margin": "5px 0 0 0", "fontSize": "14px"})
         ], style={"backgroundColor": "#1E293B", "padding": "20px", "borderRadius": "8px", "marginBottom": "20px"}),
+        
         html.Div(id='mud-context-banner', style={"marginBottom": "20px"}),
+        
         dbc.Row([
             dbc.Col([
                 html.Label("Текущий недропользователь (Заказчик):", style={"fontWeight": "bold", "color": "#0F172A"}),
@@ -185,12 +204,53 @@ def create_mud_control_layout():
             ], width=6),
             dbc.Col([html.Div(id='mud-client-criteria-banner', style={"marginTop": "30px"})], width=6),
         ], className="mb-4"),
+        
         dcc.Tabs(id='mud-tabs', value='tab-input', className='custom-tabs', children=[
-            dcc.Tab(label='Входные параметры', value='tab-input'), dcc.Tab(label='Гидравлика и ECD', value='tab-hydraulics'),
-            dcc.Tab(label='Прогноз износа ВЗД', value='tab-wear'), dcc.Tab(label='Журнал замеров', value='tab-journal'),
+            dcc.Tab(label='Входные параметры', value='tab-input'),
+            dcc.Tab(label='Гидравлика и ECD', value='tab-hydraulics'),
+            dcc.Tab(label='Прогноз износа ВЗД', value='tab-wear'),
+            dcc.Tab(label='Журнал замеров', value='tab-journal'),
         ]),
+        
+        # ВСЕ КОМПОНЕНТЫ ДЛЯ CALLBACK'ОВ (скрыты по умолчанию, но существуют)
+        html.Div(id='mud-validation-errors', style={"display": "none"}),
+        dcc.Input(id='mud-density', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-pv', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-yp', type='number', style={"display": "none"}),
+        dcc.Dropdown(id='mud-type', style={"display": "none"}),
+        dcc.Input(id='mud-sand', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-tvd', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-hole-diam', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-pipe-diam', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-flow', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-rop', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-frac-grad', type='number', style={"display": "none"}),
+        dcc.Input(id='mud-dls', type='number', style={"display": "none"}),
+        
+        html.Div(id='mud-ecd-value', style={"display": "none"}),
+        html.Div(id='mud-frac-margin', style={"display": "none"}),
+        html.Div(id='mud-ecd-status-card', style={"display": "none"}),
+        dcc.Graph(id='mud-pressure-depth-chart', style={"display": "none"}),
+        html.Div(id='mud-hydrostatic-atm', style={"display": "none"}),
+        html.Div(id='mud-friction-atm', style={"display": "none"}),
+        html.Div(id='mud-total-pressure-atm', style={"display": "none"}),
+        
+        dcc.Dropdown(id='wear-vendor', style={"display": "none"}),
+        dcc.Dropdown(id='wear-region', style={"display": "none"}),
+        dcc.Input(id='wear-current-hours', type='number', style={"display": "none"}),
+        dcc.Input(id='wear-mpi-hours', type='number', style={"display": "none"}),
+        dcc.Input(id='wear-dls', type='number', style={"display": "none"}),
+        html.Div(id='wear-mud-type-display', style={"display": "none"}),
+        html.Div(id='wear-remaining-hours', style={"display": "none"}),
+        html.Div(id='wear-mpi-status', style={"display": "none"}),
+        html.Div(id='wear-accuracy', style={"display": "none"}),
+        html.Div(id='wear-status-card', style={"display": "none"}),
+        html.Div(id='wear-similar-failures', style={"display": "none"}),
+        
         html.Div(id='mud-tabs-content', style={"marginTop": "20px"}),
-        dcc.Store(id='mud-ecd-store'), dcc.Store(id='mud-sand-store'),
+        dcc.Store(id='mud-ecd-store'),
+        dcc.Store(id='mud-sand-store'),
+        
         html.Div(id='mud-alerts-panel', style={"position": "fixed", "bottom": "0", "left": "0", "width": "100%", "backgroundColor": "#1E293B", "padding": "15px", "zIndex": "1000", "borderTop": "3px solid #3B82F6"}),
     ])
 
@@ -244,14 +304,7 @@ def create_wear_tab():
         html.H4("Предиктивная модель износа статора ВЗД", style={"color": "#0F172A", "marginBottom": "15px"}),
         dbc.Row([
             dbc.Col([html.Label("Производитель / Вендор ВЗД:", style={"fontWeight": "bold"}), dcc.Dropdown(id='wear-vendor', options=[{"label": "Радиус-Сервис", "value": "Радиус-Сервис"}, {"label": "ВНИИБТ-БИ", "value": "ВНИИБТ-БИ"}, {"label": "Зарубежный импорт", "value": "Зарубежный импорт"}], value="Радиус-Сервис", clearable=False)], width=4),
-            dbc.Col([
-                html.Label("Регион проведения работ:", style={"fontWeight": "bold"}),
-                dcc.Dropdown(id='wear-region', options=[
-                    {"label": "ХМАО / Мегион", "value": "ХМАО"}, {"label": "ЯНАО / Новый Уренгой", "value": "ЯНАО"},
-                    {"label": "Восточная Сибирь", "value": "Восточная Сибирь"}, 
-                    {"label": "Волго-Урал", "value": "Волго-Урал"}  # <-- ДОБАВЛЕНО
-                ], value="ХМАО", clearable=False)
-            ], width=4),
+            dbc.Col([html.Label("Регион проведения работ:", style={"fontWeight": "bold"}), dcc.Dropdown(id='wear-region', options=[{"label": "ХМАО / Мегион", "value": "ХМАО"}, {"label": "ЯНАО / Новый Уренгой", "value": "ЯНАО"}, {"label": "Восточная Сибирь", "value": "Восточная Сибирь"}, {"label": "Волго-Урал", "value": "Волго-Урал"}], value="ХМАО", clearable=False)], width=4),
             dbc.Col([html.Label("Текущая наработка КНБК, часы:", style={"fontWeight": "bold"}), dcc.Input(id='wear-current-hours', type='number', value=48.0, min=0.0, max=500.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=4),
         ], className="mb-3"),
         dbc.Row([
@@ -279,14 +332,15 @@ def create_journal_tab():
     ])
 
 def mud_control_callbacks(app, data_bridge):
-    @app.callback(Output('mud-tabs-content', 'children'), Input('mud-tabs', 'value'))
-    def render_mud_tab(tab_value):
-        if tab_value == 'tab-input': return create_input_tab()
-        elif tab_value == 'tab-hydraulics': return create_hydraulics_tab()
-        elif tab_value == 'tab-wear': return create_wear_tab()
-        elif tab_value == 'tab-journal': return create_journal_tab()
-        return html.Div("Выберите вкладку")
     
+    @app.callback(Output('mud-tabs-content', 'children'), Input('mud-tabs', 'value'))
+    def render_mud_tab(tab):
+        if tab == 'tab-input': return create_input_tab()
+        if tab == 'tab-hydraulics': return create_hydraulics_tab()
+        if tab == 'tab-wear': return create_wear_tab()
+        if tab == 'tab-journal': return create_journal_tab()
+        return html.Div()
+
     @app.callback(Output('mud-client-criteria-banner', 'children'), Input('mud-client-selector', 'value'))
     def update_client_criteria(client):
         criteria = get_client_criteria(client)
@@ -296,12 +350,18 @@ def mud_control_callbacks(app, data_bridge):
     def validate_geometry(pipe_diam, hole_diam):
         if pipe_diam is None or hole_diam is None: return html.Div()
         if pipe_diam >= hole_diam:
-            return html.Div(f"🚨 КРИТИЧЕСКАЯ ОШИБКА: D трубы ({pipe_diam} мм) >= D скважины ({hole_diam} мм). Проверьте входные данные.", style={"color": "#EF4444", "fontWeight": "bold", "padding": "10px", "backgroundColor": "#FEE2E2", "borderRadius": "6px", "border": "1px solid #EF4444"})
+            return html.Div(f" КРИТИЧЕСКАЯ ОШИБКА: D трубы ({pipe_diam} мм) >= D скважины ({hole_diam} мм). Проверьте входные данные.", style={"color": "#EF4444", "fontWeight": "bold", "padding": "10px", "backgroundColor": "#FEE2E2", "borderRadius": "6px", "border": "1px solid #EF4444"})
         return html.Div()
     
     @app.callback(
-        [Output('mud-ecd-value', 'children'), Output('mud-ecd-value', 'style'), Output('mud-frac-margin', 'children'), Output('mud-ecd-status-card', 'children'), Output('mud-hydrostatic-atm', 'children'), Output('mud-friction-atm', 'children'), Output('mud-total-pressure-atm', 'children'), Output('mud-pressure-depth-chart', 'figure'), Output('mud-ecd-store', 'data'), Output('mud-sand-store', 'data')],
-        [Input('mud-density', 'value'), Input('mud-pv', 'value'), Input('mud-yp', 'value'), Input('mud-sand', 'value'), Input('mud-tvd', 'value'), Input('mud-hole-diam', 'value'), Input('mud-pipe-diam', 'value'), Input('mud-flow', 'value'), Input('mud-rop', 'value'), Input('mud-frac-grad', 'value'), Input('mud-client-selector', 'value')]
+        [Output('mud-ecd-value', 'children'), Output('mud-ecd-value', 'style'), Output('mud-frac-margin', 'children'),
+         Output('mud-ecd-status-card', 'children'), Output('mud-hydrostatic-atm', 'children'), Output('mud-friction-atm', 'children'),
+         Output('mud-total-pressure-atm', 'children'), Output('mud-pressure-depth-chart', 'figure'),
+         Output('mud-ecd-store', 'data'), Output('mud-sand-store', 'data')],
+        [Input('mud-density', 'value'), Input('mud-pv', 'value'), Input('mud-yp', 'value'), Input('mud-sand', 'value'),
+         Input('mud-tvd', 'value'), Input('mud-hole-diam', 'value'), Input('mud-pipe-diam', 'value'),
+         Input('mud-flow', 'value'), Input('mud-rop', 'value'), Input('mud-frac-grad', 'value'), Input('mud-client-selector', 'value')],
+        prevent_initial_call=True
     )
     def calculate_hydraulics(density, pv, yp, sand, tvd, hole_diam, pipe_diam, flow, rop, frac_grad, client):
         if None in [density, pv, yp, sand, tvd, hole_diam, pipe_diam, flow, rop, frac_grad]:
@@ -336,8 +396,11 @@ def mud_control_callbacks(app, data_bridge):
         return (f"{ecd:.3f} г/см³", {"color": status_color}, f"{margin:.3f} г/см³", html.Div([html.Div(className="metric-label", children="СТАТУС РЕЖИМА"), html.Div(status_text, style={"fontSize": "18px", "fontWeight": "bold", "color": status_color})]), f"{result['hydrostatic_atm']:.1f} атм", f"{result['friction_atm']:.1f} атм", f"{result['total_pressure_atm']:.1f} атм", fig, ecd, sand)
     
     @app.callback(
-        [Output('wear-remaining-hours', 'children'), Output('wear-remaining-hours', 'style'), Output('wear-mpi-status', 'children'), Output('wear-accuracy', 'children'), Output('wear-status-card', 'children'), Output('wear-similar-failures', 'children')],
-        [Input('mud-sand', 'value'), Input('mud-density', 'value'), Input('mud-type', 'value'), Input('mud-dls', 'value'), Input('wear-vendor', 'value'), Input('wear-region', 'value'), Input('wear-current-hours', 'value'), Input('wear-mpi-hours', 'value')]
+        [Output('wear-remaining-hours', 'children'), Output('wear-remaining-hours', 'style'), Output('wear-mpi-status', 'children'),
+         Output('wear-accuracy', 'children'), Output('wear-status-card', 'children'), Output('wear-similar-failures', 'children')],
+        [Input('mud-sand', 'value'), Input('mud-density', 'value'), Input('mud-type', 'value'), Input('mud-dls', 'value'),
+         Input('wear-vendor', 'value'), Input('wear-region', 'value'), Input('wear-current-hours', 'value'), Input('wear-mpi-hours', 'value')],
+        prevent_initial_call=True
     )
     def predict_wear(sand, density, mud_type, dls, vendor, region, current_hours, mpi_hours):
         if None in [sand, density, mud_type, vendor, region, current_hours]: return ("0.0 ч", {}, "ОЖИДАНИЕ", "0%", html.Div("ОЖИДАНИЕ"), html.Div())
@@ -374,5 +437,5 @@ def mud_control_callbacks(app, data_bridge):
         if ecd > 1.0 + client_criteria.get("ecd_buffer", 0.025): 
             alerts.append(html.Div("️ УГРОЗА ГРП: ЭЦП превышает безопасный предел!", style={"color": "#EF4444", "fontWeight": "bold", "marginRight": "20px"}))
         if not alerts:
-            alerts.append(html.Div("🟢 Все параметры в норме", style={"color": "#10B981", "fontWeight": "bold"}))
+            alerts.append(html.Div(" Все параметры в норме", style={"color": "#10B981", "fontWeight": "bold"}))
         return html.Div(alerts, style={"display": "flex", "alignItems": "center"})
