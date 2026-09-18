@@ -1,0 +1,285 @@
+/* Drilling Assistant - Corporate Styles 2024 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+    background-color: #F8FAFC;
+    color: #1E293B;
+}
+
+/* ===== ШАПКА С ГРАДИЕНТОМ ===== */
+.app-header {
+    background: linear-gradient(135deg, #1E40AF 0%, #DC2626 100%);
+    padding: 20px 30px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.app-header h1 {
+    color: white !important;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+/* ===== БОКОВОЕ МЕНЮ ===== */
+.sidebar {
+    background-color: #FFFFFF;
+    border-right: 2px solid #E2E8F0;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.02);
+}
+
+.nav-link {
+    color: #475569 !important;
+    font-weight: 500;
+    padding: 10px 15px !important;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: #F1F5F9 !important;
+    color: #1E40AF !important;
+}
+
+.nav-link.active {
+    background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%) !important;
+    color: white !important;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(30, 64, 175, 0.3);
+}
+
+/* ===== КАРТОЧКИ ===== */
+.card {
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+}
+
+/* ===== МЕТРИКИ ===== */
+.metric-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #E2E8F0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.15);
+    border-color: #3B82F6;
+}
+
+.metric-label {
+    font-size: 11px;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.metric-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1E40AF;
+}
+
+/* ===== КНОПКИ ===== */
+.btn-primary {
+    background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 20px;
+    box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.3);
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.4);
+    background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3);
+    color: white;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
+    color: white;
+}
+
+/* ===== АЛЕРТЫ ===== */
+.alert-success {
+    background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+    border: 1px solid #10B981;
+    color: #065F46;
+    border-radius: 8px;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border: 1px solid #F59E0B;
+    color: #92400E;
+    border-radius: 8px;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+    border: 1px solid #EF4444;
+    color: #991B1B;
+    border-radius: 8px;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+    border: 1px solid #3B82F6;
+    color: #1E40AF;
+    border-radius: 8px;
+}
+
+/* ===== ТАБЛИЦЫ ===== */
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.table thead {
+    background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+    color: white;
+    font-weight: 600;
+}
+
+.table thead th {
+    border: none;
+    padding: 12px;
+}
+
+/* ===== ВКЛАДКИ ===== */
+.custom-tabs .tab--selected {
+    border-bottom: 3px solid #1E40AF !important;
+    color: #1E40AF !important;
+    font-weight: 600;
+}
+
+/* ===== СКРОЛЛБАР ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #1E40AF;
+}
+
+/* ===== ЗАГОЛОВКИ МОДУЛЕЙ ===== */
+.module-header {
+    background: linear-gradient(135deg, #1E40AF 0%, #DC2626 100%);
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.3);
+    margin-bottom: 25px;
+    color: white;
+}
+
+.module-header h2 {
+    color: white !important;
+    font-weight: 700;
+    margin: 0;
+}
+
+.module-header p {
+    color: #BFDBFE !important;
+    margin: 5px 0 0 0;
+}
+
+/* ===== ИНПУТЫ ===== */
+input[type="number"],
+input[type="text"],
+input[type="password"] {
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.2s ease;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* ===== НИЖНЯЯ ПАНЕЛЬ ===== */
+.bottom-action-bar {
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.action-metrics {
+    display: flex;
+    gap: 20px;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn.btn-primary {
+    background: #3B82F6;
+    color: white;
+    border: none;
+}
+
+.action-btn.btn-outline {
+    background: transparent;
+    color: white;
+    border: 1px solid #64748B;
+}
