@@ -191,9 +191,8 @@ def create_mud_control_layout():
     return html.Div([
         html.Div([
             html.H2("Цифровой контроль параметров бурового раствора", style={"color": "white", "margin": "0"}),
-            html.P("Методика контроля и оценки абразивного износа эластомеров | СТО ИНТИ S.100.3", 
-                  style={"color": "#94A3B8", "margin": "5px 0 0 0", "fontSize": "14px"})
-        ], style={"backgroundColor": "#1E293B", "padding": "20px", "borderRadius": "8px", "marginBottom": "20px"}),
+            html.P("Методика контроля и оценки абразивного износа эластомеров | СТО ИНТИ S.100.3", style={"color": "#BFDBFE", "margin": "5px 0 0 0", "fontSize": "14px"})
+        ], className="module-header"),
         
         html.Div(id='mud-context-banner', style={"marginBottom": "20px"}),
         
@@ -212,145 +211,112 @@ def create_mud_control_layout():
             dcc.Tab(label='Журнал замеров', value='tab-journal'),
         ]),
         
-        # ВСЕ КОМПОНЕНТЫ ДЛЯ CALLBACK'ОВ (скрыты по умолчанию, но существуют)
-        html.Div(id='mud-validation-errors', style={"display": "none"}),
-        dcc.Input(id='mud-density', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-pv', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-yp', type='number', style={"display": "none"}),
-        dcc.Dropdown(id='mud-type', style={"display": "none"}),
-        dcc.Input(id='mud-sand', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-tvd', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-hole-diam', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-pipe-diam', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-flow', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-rop', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-frac-grad', type='number', style={"display": "none"}),
-        dcc.Input(id='mud-dls', type='number', style={"display": "none"}),
+        # ВСЕ ВКЛАДКИ СОЗДАНЫ СРАЗУ
+        html.Div(id='mud-input-tab', children=[
+            html.H4("Технологические параметры промывочной жидкости", style={"color": "#1E40AF", "marginBottom": "15px", "marginTop": "20px"}),
+            html.Div(id='mud-validation-errors', style={"marginBottom": "15px"}),
+            dbc.Row([
+                dbc.Col([html.Label("Плотность раствора, г/см³:", style={"fontWeight": "bold"}), dcc.Input(id='mud-density', type='number', value=1.12, min=0.8, max=2.5, step=0.01, style={"width": "100%", "padding": "8px"})], width=4),
+                dbc.Col([html.Label("Пластическая вязкость ПВ, мПа·с:", style={"fontWeight": "bold"}), dcc.Input(id='mud-pv', type='number', value=25.0, min=1.0, max=100.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=4),
+                dbc.Col([html.Label("Динамическое напряжение сдвига ДНС, дПа:", style={"fontWeight": "bold"}), dcc.Input(id='mud-yp', type='number', value=12.0, min=0.0, max=100.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([html.Label("Тип бурового раствора:", style={"fontWeight": "bold"}), dcc.Dropdown(id='mud-type', options=[{"label": "Полимерный / Биополимерный", "value": "Полимерный"}, {"label": "Гипсокалиевый", "value": "Гипсокалиевый"}, {"label": "Гелево-Эмульсионный (ГЭР)", "value": "ГЭР"}, {"label": "Кислотная пачка", "value": "Кислотная"}], value="Полимерный", clearable=False)], width=6),
+                dbc.Col([html.Label("Содержание песка (абразива), %:", style={"fontWeight": "bold", "color": "#DC2626"}), dcc.Input(id='mud-sand', type='number', value=0.5, min=0.0, max=10.0, step=0.1, style={"width": "100%", "padding": "8px", "border": "2px solid #DC2626"})], width=6),
+            ], className="mb-3"),
+            html.Hr(), html.H4("Параметры скважины и бурения", style={"color": "#1E40AF", "marginBottom": "15px"}),
+            dbc.Row([
+                dbc.Col([html.Label("Вертикальная глубина (TVD), м:", style={"fontWeight": "bold"}), dcc.Input(id='mud-tvd', type='number', value=2500.0, min=10.0, max=10000.0, step=10.0, style={"width": "100%", "padding": "8px"})], width=4),
+                dbc.Col([html.Label("Диаметр скважины, мм:", style={"fontWeight": "bold"}), dcc.Input(id='mud-hole-diam', type='number', value=215.9, min=50.0, max=500.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=4),
+                dbc.Col([html.Label("Наружный диаметр трубы, мм:", style={"fontWeight": "bold"}), dcc.Input(id='mud-pipe-diam', type='number', value=127.0, min=10.0, max=300.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([html.Label("Расход насосов, л/с:", style={"fontWeight": "bold"}), dcc.Input(id='mud-flow', type='number', value=28.0, min=0.0, max=60.0, step=0.5, style={"width": "100%", "padding": "8px"})], width=3),
+                dbc.Col([html.Label("Скорость проходки (ROP), м/ч:", style={"fontWeight": "bold"}), dcc.Input(id='mud-rop', type='number', value=35.0, min=0.0, max=200.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=3),
+                dbc.Col([html.Label("Эквивалент ГРП / поглощения, г/см³:", style={"fontWeight": "bold", "color": "#DC2626"}), dcc.Input(id='mud-frac-grad', type='number', value=1.35, min=0.8, max=3.0, step=0.01, style={"width": "100%", "padding": "8px", "border": "2px solid #DC2626"})], width=3),
+                dbc.Col([html.Label("Интенсивность искривления (DLS), град/10м:", style={"fontWeight": "bold"}), dcc.Input(id='mud-dls', type='number', value=1.5, min=0.0, max=10.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=3),
+            ], className="mb-3"),
+        ], style={"marginTop": "20px"}),
         
-        html.Div(id='mud-ecd-value', style={"display": "none"}),
-        html.Div(id='mud-frac-margin', style={"display": "none"}),
-        html.Div(id='mud-ecd-status-card', style={"display": "none"}),
-        dcc.Graph(id='mud-pressure-depth-chart', style={"display": "none"}),
-        html.Div(id='mud-hydrostatic-atm', style={"display": "none"}),
-        html.Div(id='mud-friction-atm', style={"display": "none"}),
-        html.Div(id='mud-total-pressure-atm', style={"display": "none"}),
+        html.Div(id='mud-hydraulics-tab', children=[
+            html.H4("Результаты гидродинамического мониторинга", style={"color": "#1E40AF", "marginBottom": "15px", "marginTop": "20px"}),
+            dbc.Row([
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="РАСЧЕТНАЯ ЭЦП (ECD)"), html.Div(id='mud-ecd-value', className="metric-value", children="0.000 г/см³")])], width=4),
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ЗАПАС ДО ГРП ПЛАСТА"), html.Div(id='mud-frac-margin', className="metric-value", children="0.000 г/см³")])], width=4),
+                dbc.Col([html.Div(id='mud-ecd-status-card', className="metric-card", children=[html.Div(className="metric-label", children="СТАТУС РЕЖИМА"), html.Div("ОЖИДАНИЕ", style={"fontSize": "20px", "fontWeight": "bold"})])], width=4),
+            ], className="mb-4"),
+            html.H5("Профиль давления по глубине скважины", style={"color": "#1E40AF", "marginBottom": "10px"}),
+            dcc.Graph(id='mud-pressure-depth-chart', style={"height": "500px"}),
+            html.H5("Абсолютные давления на забое", style={"color": "#1E40AF", "marginTop": "20px", "marginBottom": "10px"}),
+            dbc.Row([
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ГИДРОСТАТИКА СМЕСИ"), html.Div(id='mud-hydrostatic-atm', className="metric-value", children="0.0 атм")])], width=4),
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ПОТЕРИ НА ТРЕНИЕ"), html.Div(id='mud-friction-atm', className="metric-value", children="0.0 атм")])], width=4),
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ПОЛНОЕ ЗАБОЙНОЕ ДАВЛЕНИЕ"), html.Div(id='mud-total-pressure-atm', className="metric-value", children="0.0 атм")])], width=4),
+            ]),
+        ], style={"display": "none", "marginTop": "20px"}),
         
-        dcc.Dropdown(id='wear-vendor', style={"display": "none"}),
-        dcc.Dropdown(id='wear-region', style={"display": "none"}),
-        dcc.Input(id='wear-current-hours', type='number', style={"display": "none"}),
-        dcc.Input(id='wear-mpi-hours', type='number', style={"display": "none"}),
-        dcc.Input(id='wear-dls', type='number', style={"display": "none"}),
-        html.Div(id='wear-mud-type-display', style={"display": "none"}),
-        html.Div(id='wear-remaining-hours', style={"display": "none"}),
-        html.Div(id='wear-mpi-status', style={"display": "none"}),
-        html.Div(id='wear-accuracy', style={"display": "none"}),
-        html.Div(id='wear-status-card', style={"display": "none"}),
-        html.Div(id='wear-similar-failures', style={"display": "none"}),
+        html.Div(id='mud-wear-tab', children=[
+            html.H4("Предиктивная модель износа статора ВЗД", style={"color": "#1E40AF", "marginBottom": "15px", "marginTop": "20px"}),
+            dbc.Row([
+                dbc.Col([html.Label("Производитель / Вендор ВЗД:", style={"fontWeight": "bold"}), dcc.Dropdown(id='wear-vendor', options=[{"label": "Радиус-Сервис", "value": "Радиус-Сервис"}, {"label": "ВНИИБТ-БИ", "value": "ВНИИБТ-БИ"}, {"label": "Зарубежный импорт", "value": "Зарубежный импорт"}], value="Радиус-Сервис", clearable=False)], width=4),
+                dbc.Col([html.Label("Регион проведения работ:", style={"fontWeight": "bold"}), dcc.Dropdown(id='wear-region', options=[{"label": "ХМАО / Мегион", "value": "ХМАО"}, {"label": "ЯНАО / Новый Уренгой", "value": "ЯНАО"}, {"label": "Восточная Сибирь", "value": "Восточная Сибирь"}, {"label": "Волго-Урал", "value": "Волго-Урал"}], value="ХМАО", clearable=False)], width=4),
+                dbc.Col([html.Label("Текущая наработка КНБК, часы:", style={"fontWeight": "bold"}), dcc.Input(id='wear-current-hours', type='number', value=48.0, min=0.0, max=500.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([html.Label("Межповерочный интервал ВЗД (MPI), часы:", style={"fontWeight": "bold", "color": "#DC2626"}), dcc.Input(id='wear-mpi-hours', type='number', value=200.0, min=50.0, max=500.0, step=10.0, style={"width": "100%", "padding": "8px", "border": "2px solid #DC2626"})], width=4),
+                dbc.Col([html.Label("Интенсивность искривления (DLS), град/10м:", style={"fontWeight": "bold"}), dcc.Input(id='wear-dls', type='number', value=1.5, min=0.0, max=10.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=4),
+                dbc.Col([html.Label("Тип раствора:", style={"fontWeight": "bold"}), dcc.Input(id='wear-mud-type-display', type='text', value="Полимерный", readOnly=True, style={"width": "100%", "padding": "8px", "backgroundColor": "#F1F5F9"})], width=4),
+            ], className="mb-4"),
+            dbc.Row([
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ОСТАТОЧНЫЙ РЕСУРС ВЗД"), html.Div(id='wear-remaining-hours', className="metric-value", children="0.0 ч")])], width=3),
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="СТАТУС МПИ"), html.Div(id='wear-mpi-status', children="ОЖИДАНИЕ")])], width=3),
+                dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ТОЧНОСТЬ ПРОГНОЗА ИИ"), html.Div(id='wear-accuracy', className="metric-value", children="0%")])], width=3),
+                dbc.Col([html.Div(id='wear-status-card', className="metric-card", children=[html.Div(className="metric-label", children="СТАТУС БУРЕНИЯ"), html.Div("ОЖИДАНИЕ", style={"fontSize": "20px", "fontWeight": "bold"})])], width=3),
+            ], className="mb-4"),
+            html.H5("Топ-3 схожих исторических отказа в регионе", style={"color": "#1E40AF", "marginBottom": "10px"}),
+            html.Div(id='wear-similar-failures'),
+        ], style={"display": "none", "marginTop": "20px"}),
         
-        html.Div(id='mud-tabs-content', style={"marginTop": "20px"}),
+        html.Div(id='mud-journal-tab', children=[
+            html.H4("Цифровой журнал замеров параметров БР", style={"color": "#1E40AF", "marginBottom": "15px", "marginTop": "20px"}),
+            dbc.Row([dbc.Col([dbc.Button("📝 Зафиксировать текущую точку", id='btn-log-point', color="primary", className="w-100")], width=6), dbc.Col([dbc.Button("🗑 Очистить журнал", id='btn-clear-journal', color="danger", className="w-100")], width=6)], className="mb-3"),
+            html.Div(id='journal-table'),
+            dbc.Button("📥 Скачать журнал (CSV)", id='btn-download-journal', color="success", className="w-100 mt-3"),
+            dcc.Download(id='download-journal-csv'),
+        ], style={"display": "none", "marginTop": "20px"}),
+        
         dcc.Store(id='mud-ecd-store'),
         dcc.Store(id='mud-sand-store'),
         
         html.Div(id='mud-alerts-panel', style={"position": "fixed", "bottom": "0", "left": "0", "width": "100%", "backgroundColor": "#1E293B", "padding": "15px", "zIndex": "1000", "borderTop": "3px solid #3B82F6"}),
     ])
 
-def create_input_tab():
-    return html.Div([
-        html.H4("Технологические параметры промывочной жидкости", style={"color": "#0F172A", "marginBottom": "15px"}),
-        html.Div(id='mud-validation-errors', style={"marginBottom": "15px"}),
-        dbc.Row([
-            dbc.Col([html.Label("Плотность раствора, г/см³:", style={"fontWeight": "bold"}), dcc.Input(id='mud-density', type='number', value=1.12, min=0.8, max=2.5, step=0.01, style={"width": "100%", "padding": "8px"})], width=4),
-            dbc.Col([html.Label("Пластическая вязкость ПВ, мПа·с:", style={"fontWeight": "bold"}), dcc.Input(id='mud-pv', type='number', value=25.0, min=1.0, max=100.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=4),
-            dbc.Col([html.Label("Динамическое напряжение сдвига ДНС, дПа:", style={"fontWeight": "bold"}), dcc.Input(id='mud-yp', type='number', value=12.0, min=0.0, max=100.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=4),
-        ], className="mb-3"),
-        dbc.Row([
-            dbc.Col([html.Label("Тип бурового раствора:", style={"fontWeight": "bold"}), dcc.Dropdown(id='mud-type', options=[{"label": "Полимерный / Биополимерный", "value": "Полимерный"}, {"label": "Гипсокалиевый", "value": "Гипсокалиевый"}, {"label": "Гелево-Эмульсионный (ГЭР)", "value": "ГЭР"}, {"label": "Кислотная пачка", "value": "Кислотная"}], value="Полимерный", clearable=False)], width=6),
-            dbc.Col([html.Label("Содержание песка (абразива), %:", style={"fontWeight": "bold", "color": "#DC2626"}), dcc.Input(id='mud-sand', type='number', value=0.5, min=0.0, max=10.0, step=0.1, style={"width": "100%", "padding": "8px", "border": "2px solid #DC2626"})], width=6),
-        ], className="mb-3"),
-        html.Hr(), html.H4("Параметры скважины и бурения", style={"color": "#0F172A", "marginBottom": "15px"}),
-        dbc.Row([
-            dbc.Col([html.Label("Вертикальная глубина (TVD), м:", style={"fontWeight": "bold"}), dcc.Input(id='mud-tvd', type='number', value=2500.0, min=10.0, max=10000.0, step=10.0, style={"width": "100%", "padding": "8px"})], width=4),
-            dbc.Col([html.Label("Диаметр скважины, мм:", style={"fontWeight": "bold"}), dcc.Input(id='mud-hole-diam', type='number', value=215.9, min=50.0, max=500.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=4),
-            dbc.Col([html.Label("Наружный диаметр трубы, мм:", style={"fontWeight": "bold"}), dcc.Input(id='mud-pipe-diam', type='number', value=127.0, min=10.0, max=300.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=4),
-        ], className="mb-3"),
-        dbc.Row([
-            dbc.Col([html.Label("Расход насосов, л/с:", style={"fontWeight": "bold"}), dcc.Input(id='mud-flow', type='number', value=28.0, min=0.0, max=60.0, step=0.5, style={"width": "100%", "padding": "8px"})], width=3),
-            dbc.Col([html.Label("Скорость проходки (ROP), м/ч:", style={"fontWeight": "bold"}), dcc.Input(id='mud-rop', type='number', value=35.0, min=0.0, max=200.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=3),
-            dbc.Col([html.Label("Эквивалент ГРП / поглощения, г/см³:", style={"fontWeight": "bold", "color": "#DC2626"}), dcc.Input(id='mud-frac-grad', type='number', value=1.35, min=0.8, max=3.0, step=0.01, style={"width": "100%", "padding": "8px", "border": "2px solid #DC2626"})], width=3),
-            dbc.Col([html.Label("Интенсивность искривления (DLS), град/10м:", style={"fontWeight": "bold"}), dcc.Input(id='mud-dls', type='number', value=1.5, min=0.0, max=10.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=3),
-        ], className="mb-3"),
-    ])
-
-def create_hydraulics_tab():
-    return html.Div([
-        html.H4("Результаты гидродинамического мониторинга", style={"color": "#0F172A", "marginBottom": "15px"}),
-        dbc.Row([
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="РАСЧЕТНАЯ ЭЦП (ECD)"), html.Div(id='mud-ecd-value', className="metric-value", children="0.000 г/см³")])], width=4),
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ЗАПАС ДО ГРП ПЛАСТА"), html.Div(id='mud-frac-margin', className="metric-value", children="0.000 г/см³")])], width=4),
-            dbc.Col([html.Div(id='mud-ecd-status-card', children=[html.Div(className="metric-label", children="СТАТУС РЕЖИМА"), html.Div("ОЖИДАНИЕ", style={"fontSize": "20px", "fontWeight": "bold"})])], width=4),
-        ], className="mb-4"),
-        html.H5("Профиль давления по глубине скважины", style={"color": "#0F172A", "marginBottom": "10px"}),
-        dcc.Graph(id='mud-pressure-depth-chart', style={"height": "500px"}),
-        html.H5("Абсолютные давления на забое", style={"color": "#0F172A", "marginTop": "20px", "marginBottom": "10px"}),
-        dbc.Row([
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ГИДРОСТАТИКА СМЕСИ"), html.Div(id='mud-hydrostatic-atm', className="metric-value", children="0.0 атм")])], width=4),
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ПОТЕРИ НА ТРЕНИЕ"), html.Div(id='mud-friction-atm', className="metric-value", children="0.0 атм")])], width=4),
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ПОЛНОЕ ЗАБОЙНОЕ ДАВЛЕНИЕ"), html.Div(id='mud-total-pressure-atm', className="metric-value", children="0.0 атм")])], width=4),
-        ]),
-    ])
-
-def create_wear_tab():
-    return html.Div([
-        html.H4("Предиктивная модель износа статора ВЗД", style={"color": "#0F172A", "marginBottom": "15px"}),
-        dbc.Row([
-            dbc.Col([html.Label("Производитель / Вендор ВЗД:", style={"fontWeight": "bold"}), dcc.Dropdown(id='wear-vendor', options=[{"label": "Радиус-Сервис", "value": "Радиус-Сервис"}, {"label": "ВНИИБТ-БИ", "value": "ВНИИБТ-БИ"}, {"label": "Зарубежный импорт", "value": "Зарубежный импорт"}], value="Радиус-Сервис", clearable=False)], width=4),
-            dbc.Col([html.Label("Регион проведения работ:", style={"fontWeight": "bold"}), dcc.Dropdown(id='wear-region', options=[{"label": "ХМАО / Мегион", "value": "ХМАО"}, {"label": "ЯНАО / Новый Уренгой", "value": "ЯНАО"}, {"label": "Восточная Сибирь", "value": "Восточная Сибирь"}, {"label": "Волго-Урал", "value": "Волго-Урал"}], value="ХМАО", clearable=False)], width=4),
-            dbc.Col([html.Label("Текущая наработка КНБК, часы:", style={"fontWeight": "bold"}), dcc.Input(id='wear-current-hours', type='number', value=48.0, min=0.0, max=500.0, step=1.0, style={"width": "100%", "padding": "8px"})], width=4),
-        ], className="mb-3"),
-        dbc.Row([
-            dbc.Col([html.Label("Межповерочный интервал ВЗД (MPI), часы:", style={"fontWeight": "bold", "color": "#DC2626"}), dcc.Input(id='wear-mpi-hours', type='number', value=200.0, min=50.0, max=500.0, step=10.0, style={"width": "100%", "padding": "8px", "border": "2px solid #DC2626"})], width=4),
-            dbc.Col([html.Label("Интенсивность искривления (DLS), град/10м:", style={"fontWeight": "bold"}), dcc.Input(id='wear-dls', type='number', value=1.5, min=0.0, max=10.0, step=0.1, style={"width": "100%", "padding": "8px"})], width=4),
-            dbc.Col([html.Label("Тип раствора:", style={"fontWeight": "bold"}), dcc.Input(id='wear-mud-type-display', type='text', value="Полимерный", readOnly=True, style={"width": "100%", "padding": "8px", "backgroundColor": "#F1F5F9"})], width=4),
-        ], className="mb-4"),
-        dbc.Row([
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ОСТАТОЧНЫЙ РЕСУРС ВЗД"), html.Div(id='wear-remaining-hours', className="metric-value", children="0.0 ч")])], width=3),
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="СТАТУС МПИ"), html.Div(id='wear-mpi-status', children="ОЖИДАНИЕ")])], width=3),
-            dbc.Col([html.Div(className="metric-card", children=[html.Div(className="metric-label", children="ТОЧНОСТЬ ПРОГНОЗА ИИ"), html.Div(id='wear-accuracy', className="metric-value", children="0%")])], width=3),
-            dbc.Col([html.Div(id='wear-status-card', children=[html.Div(className="metric-label", children="СТАТУС БУРЕНИЯ"), html.Div("ОЖИДАНИЕ", style={"fontSize": "20px", "fontWeight": "bold"})])], width=3),
-        ], className="mb-4"),
-        html.H5("Топ-3 схожих исторических отказа в регионе", style={"color": "#0F172A", "marginBottom": "10px"}),
-        html.Div(id='wear-similar-failures'),
-    ])
-
-def create_journal_tab():
-    return html.Div([
-        html.H4("Цифровой журнал замеров параметров БР", style={"color": "#0F172A", "marginBottom": "15px"}),
-        dbc.Row([dbc.Col([dbc.Button(" Зафиксировать текущую точку", id='btn-log-point', color="primary", className="w-100")], width=6), dbc.Col([dbc.Button("🗑 Очистить журнал", id='btn-clear-journal', color="danger", className="w-100")], width=6)], className="mb-3"),
-        html.Div(id='journal-table'),
-        dbc.Button(" Скачать журнал (CSV)", id='btn-download-journal', color="success", className="w-100 mt-3"),
-        dcc.Download(id='download-journal-csv'),
-    ])
-
 def mud_control_callbacks(app, data_bridge):
     
-    @app.callback(Output('mud-tabs-content', 'children'), Input('mud-tabs', 'value'))
-    def render_mud_tab(tab):
-        if tab == 'tab-input': return create_input_tab()
-        if tab == 'tab-hydraulics': return create_hydraulics_tab()
-        if tab == 'tab-wear': return create_wear_tab()
-        if tab == 'tab-journal': return create_journal_tab()
-        return html.Div()
+    @app.callback(
+        [Output('mud-input-tab', 'style'), Output('mud-hydraulics-tab', 'style'), Output('mud-wear-tab', 'style'), Output('mud-journal-tab', 'style')],
+        Input('mud-tabs', 'value'),
+        prevent_initial_call=True
+    )
+    def switch_mud_tab(tab):
+        hidden = {"display": "none", "marginTop": "20px"}
+        visible = {"display": "block", "marginTop": "20px"}
+        if tab == 'tab-input': return visible, hidden, hidden, hidden
+        if tab == 'tab-hydraulics': return hidden, visible, hidden, hidden
+        if tab == 'tab-wear': return hidden, hidden, visible, hidden
+        if tab == 'tab-journal': return hidden, hidden, hidden, visible
+        return hidden, hidden, hidden, hidden
 
-    @app.callback(Output('mud-client-criteria-banner', 'children'), Input('mud-client-selector', 'value'))
+    @app.callback(Output('mud-client-criteria-banner', 'children'), Input('mud-client-selector', 'value'), prevent_initial_call=True)
     def update_client_criteria(client):
         criteria = get_client_criteria(client)
-        return html.Div([f" Регламент ТК {criteria['label']}: Максимальное содержание песка: > {criteria['sand_limit']}%"], style={"backgroundColor": criteria["color"] + "20", "padding": "15px", "borderRadius": "6px", "border": f"2px solid {criteria['color']}", "fontWeight": "bold"})
+        return html.Div([f"📋 Регламент ТК {criteria['label']}: Максимальное содержание песка: > {criteria['sand_limit']}%"], style={"backgroundColor": criteria["color"] + "20", "padding": "15px", "borderRadius": "6px", "border": f"2px solid {criteria['color']}", "fontWeight": "bold"})
     
-    @app.callback(Output('mud-validation-errors', 'children'), [Input('mud-pipe-diam', 'value'), Input('mud-hole-diam', 'value')])
+    @app.callback(Output('mud-validation-errors', 'children'), [Input('mud-pipe-diam', 'value'), Input('mud-hole-diam', 'value')], prevent_initial_call=True)
     def validate_geometry(pipe_diam, hole_diam):
         if pipe_diam is None or hole_diam is None: return html.Div()
         if pipe_diam >= hole_diam:
-            return html.Div(f" КРИТИЧЕСКАЯ ОШИБКА: D трубы ({pipe_diam} мм) >= D скважины ({hole_diam} мм). Проверьте входные данные.", style={"color": "#EF4444", "fontWeight": "bold", "padding": "10px", "backgroundColor": "#FEE2E2", "borderRadius": "6px", "border": "1px solid #EF4444"})
+            return html.Div(f"🚨 КРИТИЧЕСКАЯ ОШИБКА: D трубы ({pipe_diam} мм) >= D скважины ({hole_diam} мм). Проверьте входные данные.", style={"color": "#EF4444", "fontWeight": "bold", "padding": "10px", "backgroundColor": "#FEE2E2", "borderRadius": "6px", "border": "1px solid #EF4444"})
         return html.Div()
     
     @app.callback(
@@ -427,7 +393,7 @@ def mud_control_callbacks(app, data_bridge):
         similar_html = html.Div([dbc.Row([dbc.Col(html.Div(f"Отказ #{i+1}: Песок {sand:.2f}%, T {temp_est:.0f}°C, DLS {dls:.1f}°/10м", style={"padding": "10px", "backgroundColor": "#F1F5F9", "borderRadius": "6px"})) for i in range(3)])])
         return (f"{remaining:.1f} ч", {"color": status_color}, mpi_status, f"{prediction['accuracy']:.1f}%", html.Div([html.Div(className="metric-label", children="СТАТУС БУРЕНИЯ"), html.Div(status_text, style={"fontSize": "18px", "fontWeight": "bold", "color": status_color})]), similar_html)
     
-    @app.callback(Output('mud-alerts-panel', 'children'), [Input('mud-sand-store', 'data'), Input('mud-ecd-store', 'data'), Input('mud-client-selector', 'value')])
+    @app.callback(Output('mud-alerts-panel', 'children'), [Input('mud-sand-store', 'data'), Input('mud-ecd-store', 'data'), Input('mud-client-selector', 'value')], prevent_initial_call=True)
     def update_alerts(sand, ecd, client):
         if sand is None or ecd is None: return html.Div()
         client_criteria = get_client_criteria(client)
@@ -435,7 +401,7 @@ def mud_control_callbacks(app, data_bridge):
         if sand > client_criteria["sand_limit"]:
             alerts.append(html.Div(f"🚨 КРИТИЧЕСКИЙ РИСК: Песок {sand:.2f}% превышает лимит {client_criteria['sand_limit']}%!", style={"color": "#EF4444", "fontWeight": "bold", "marginRight": "20px"}))
         if ecd > 1.0 + client_criteria.get("ecd_buffer", 0.025): 
-            alerts.append(html.Div("️ УГРОЗА ГРП: ЭЦП превышает безопасный предел!", style={"color": "#EF4444", "fontWeight": "bold", "marginRight": "20px"}))
+            alerts.append(html.Div("⚠️ УГРОЗА ГРП: ЭЦП превышает безопасный предел!", style={"color": "#EF4444", "fontWeight": "bold", "marginRight": "20px"}))
         if not alerts:
-            alerts.append(html.Div(" Все параметры в норме", style={"color": "#10B981", "fontWeight": "bold"}))
+            alerts.append(html.Div("✅ Все параметры в норме", style={"color": "#10B981", "fontWeight": "bold"}))
         return html.Div(alerts, style={"display": "flex", "alignItems": "center"})
