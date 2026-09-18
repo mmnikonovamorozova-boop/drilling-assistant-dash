@@ -1,177 +1,120 @@
 """
-МОДУЛЬ: СБОРКА КНБК И ВХОДНОЙ КОНТРОЛЬ
-Объединяет входной контроль элементов, проверку ВЗД, УМК, склад и оценку рисков.
+МОДУЛЬ СБОРКИ КНБК И ВХОДНОГО КОНТРОЛЯ ВЗД
+Все компоненты создаются СРАЗУ в макете
 """
+import pandas as pd
 from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
 import dash_table
-import pandas as pd
 
-# Импорты всех подмодулей
-from modules.warehouse import create_warehouse_upload_section, create_alternative_suggestion, warehouse_callbacks
-from modules.ai_advisor import create_ai_advisor_panel, ai_advisor_callbacks
 from modules.bha_umk_enhanced import create_umk_enhanced_panel, umk_enhanced_callbacks
 from modules.bha_joints import get_joints_table_component
-from modules.bha_visual import create_bha_visualization
 from modules.vzd_wear import create_vzd_wear_panel, vzd_wear_callbacks
-from modules.risk_assessment import create_risk_assessment_panel, risk_assessment_callbacks
-from utils.data_bridge import DataBridge
 
-# --- ДАННЫЕ ДЛЯ ПРИМЕРА (Имитация парсинга рапорта) ---
-sample_bha_data = pd.DataFrame([
-    {"№": 1, "Элемент": "ТБТ-172", "OD факт": 171.5, "OD ном": 172.0, "Статус": "ОК"},
-    {"№": 2, "Элемент": "Переводник 172/165", "OD факт": 171.8, "OD ном": 172.0, "Статус": "ОК"},
-    {"№": 3, "Элемент": "ВЗД-172 (Радиус)", "OD факт": 171.2, "OD ном": 172.0, "Статус": "Требует проверки"},
-    {"№": 4, "Элемент": "НУБТ-165", "OD факт": 164.5, "OD ном": 165.0, "Статус": "ОК"},
-])
-
-# ============================================================================
-# ЛЕЙАУТ МОДУЛЯ
-# ============================================================================
+sample_bha_data = [
+    {"Наименование": "ТБТ-172", "S/N": "ТБТ-001", "OD": 172.0, "ID": 71.4, "Длина": 9.2, "Статус": "✅ OK"},
+    {"Наименование": "Переводник 172/165", "S/N": "ПП-045", "OD": 172.0, "ID": 71.4, "Длина": 1.5, "Статус": "✅ OK"},
+    {"Наименование": "НУБТ-165", "S/N": "НУБТ-112", "OD": 165.0, "ID": 71.4, "Длина": 9.1, "Статус": "✅ OK"},
+    {"Наименование": "УЗС-165", "S/N": "УЗС-009", "OD": 165.0, "ID": 71.4, "Длина": 8.9, "Статус": "✅ OK"},
+    {"Наименование": "Пульсатор-165", "S/N": "ПУЛ-023", "OD": 165.0, "ID": 71.4, "Длина": 3.2, "Статус": "✅ OK"},
+    {"Наименование": "Фильтр-165", "S/N": "ФИЛ-007", "OD": 165.0, "ID": 71.4, "Длина": 2.1, "Статус": "✅ OK"},
+    {"Наименование": "ВЗД-172", "S/N": "ВЗД-6677", "OD": 172.0, "ID": 120.0, "Длина": 8.5, "Статус": "✅ OK"},
+]
 
 def bha_assembly_layout():
-    """Основной макет модуля сборки КНБК (вызывается из app.py)"""
     return html.Div([
-        dbc.Row([
-            dbc.Col(width=9, children=[
-                dcc.Tabs(
-                    id='main-tabs',
-                    value='tab-input',
-                    className='custom-tabs',
-                    children=[
-                        dcc.Tab(label='1. Входной контроль элементов', value='tab-input'),
-                        dcc.Tab(label='2. Визуальная схема и стыки', value='tab-visual'),
-                        dcc.Tab(label='3. Расчет УМК и натяжения', value='tab-umk'),
-                        dcc.Tab(label='4. Живой склад', value='tab-warehouse'),
-                        dcc.Tab(label='5. Оценка рисков', value='tab-risks'),
-                    ]
-                ),
-                html.Div(id='tabs-content', className="mt-3")
-            ]),
-            dbc.Col(width=3, children=[
-                html.Div(className="right-panel", children=[
-                    html.Div(className="panel-title", children="КОНТРОЛЬ ИЗНОСА ВЗД"),
-                    html.Div(id='vzd-panel-content')
-                ])
-            ])
-        ])
+        html.Div([
+            html.H2("Сборка КНБК и входной контроль ВЗД", style={"color": "white", "margin": "0"}),
+            html.P("Проверка сертификатов, расчет УМК, контроль стыков", style={"color": "#BFDBFE", "margin": "5px 0 0 0", "fontSize": "14px"})
+        ], className="module-header"),
+
+        dcc.Tabs(id='bha-tabs', value='tab-input', className='custom-tabs', children=[
+            dcc.Tab(label='Входной контроль', value='tab-input'),
+            dcc.Tab(label='Расчет УМК', value='tab-umk'),
+            dcc.Tab(label='Таблица стыков', value='tab-joints'),
+            dcc.Tab(label='Контроль ВЗД', value='tab-vzd'),
+        ]),
+
+        # ВСЕ ВКЛАДКИ СОЗДАНЫ СРАЗУ
+        html.Div(id='bha-input-tab', children=[
+            html.H4("Таблица элементов КНБК", style={"color": "#1E40AF", "marginBottom": "15px", "marginTop": "20px"}),
+            dash_table.DataTable(
+                id='bha-elements-table',
+                columns=[{"name": i, "id": i} for i in ["Наименование", "S/N", "OD", "ID", "Длина", "Статус"]],
+                data=sample_bha_data,
+                editable=True,
+                style_table={'overflowX': 'auto', 'border': '1px solid #E2E8F0', 'borderRadius': '8px'},
+                style_cell={'textAlign': 'left', 'padding': '10px', 'fontSize': '13px'},
+                style_header={'backgroundColor': '#1E40AF', 'fontWeight': 'bold', 'color': 'white'},
+                style_data_conditional=[
+                    {"if": {"filter_query": "{Статус} contains '✅'"}, "backgroundColor": "#D1FAE5", "color": "#065F46"},
+                ]
+            ),
+            html.Div(id='bha-validation-summary', style={"marginTop": "20px"}),
+        ], style={"marginTop": "20px"}),
+
+        html.Div(id='bha-umk-tab', children=[
+            create_umk_enhanced_panel(),
+            html.Div(id='umk-results-enhanced'),
+        ], style={"display": "none", "marginTop": "20px"}),
+
+        html.Div(id='bha-joints-tab', children=[
+            get_joints_table_component(),
+        ], style={"display": "none", "marginTop": "20px"}),
+
+        html.Div(id='bha-vzd-tab', children=[
+            create_vzd_wear_panel(),
+            html.Div(id='vzd-wear-results'),
+        ], style={"display": "none", "marginTop": "20px"}),
     ])
-
-def get_input_control_tab():
-    """Вкладка 1: Входной контроль (Таблица элементов)"""
-    return html.Div([
-        html.H4("Журнал входного контроля элементов КНБК", 
-                style={"color": "#0f172a", "borderBottom": "2px solid #cbd5e1", "paddingBottom": "10px"}),
-        html.P("Внесите фактические замеры по каждому элементу согласно паспорту.", style={"color": "#64748b"}),
-        
-        dash_table.DataTable(
-            id='bha-input-table',
-            columns=[
-                {"name": "№", "id": "№"},
-                {"name": "Элемент", "id": "Элемент"},
-                {"name": "OD факт (мм)", "id": "OD факт", "type": "numeric", "editable": True},
-                {"name": "OD ном (мм)", "id": "OD ном", "type": "numeric"},
-                {"name": "Статус СМК", "id": "Статус"},
-            ],
-            data=sample_bha_data.to_dict('records'),
-            style_table={'overflowX': 'auto'},
-            style_cell={'textAlign': 'left', 'padding': '10px', 'border': '1px solid #e2e8f0'},
-            style_header={'backgroundColor': '#f1f5f9', 'fontWeight': 'bold', 'color': '#0f172a'},
-            style_data_conditional=[
-                {
-                    'if': {'filter_query': '{Статус} = "Требует проверки"'},
-                    'backgroundColor': '#fef2f2',
-                    'color': '#dc2626',
-                    'fontWeight': 'bold'
-                },
-                {
-                    'if': {'filter_query': '{Статус} = "ОК"'},
-                    'backgroundColor': '#f0fdf4',
-                    'color': '#16a34a'
-                }
-            ]
-        ),
-        
-        html.Div(style={"marginTop": "20px"}, children=[
-            html.Button("Добавить элемент", className="action-btn btn-outline", style={"marginRight": "10px"}),
-            html.Button("Загрузить из рапорта (Excel/CSV)", className="action-btn btn-primary")
-        ])
-    ])
-
-def get_visual_tab():
-    """Вкладка 2: Визуальная схема + Таблица стыков"""
-    fig = create_bha_visualization()
-    
-    return html.Div([
-        html.H4("Визуальная схема КНБК (Топология)", 
-                style={"color": "#0f172a", "marginBottom": "15px", "borderBottom": "2px solid #cbd5e1", "paddingBottom": "10px"}),
-        
-        dcc.Graph(
-            id='bha-visual-graph', 
-            figure=fig,
-            config={'displayModeBar': False}
-        ),
-        
-        html.Hr(style={"borderColor": "#cbd5e1", "margin": "25px 0"}),
-        
-        html.H5("Таблица стыков и перепадов диаметров", 
-                style={"color": "#0f172a", "marginTop": "20px", "marginBottom": "15px"}),
-        
-        get_joints_table_component(),
-    ])
-
-def get_umk_tab():
-    """Вкладка 3: УМК"""
-    return create_umk_enhanced_panel()
-
-def get_warehouse_tab():
-    """Вкладка 4: Живой склад"""
-    return create_warehouse_upload_section()
-
-def get_risks_tab():
-    """Вкладка 5: Оценка рисков"""
-    return create_risk_assessment_panel()
-
-def get_vzd_panel():
-    """Правая панель: Контроль ВЗД (Всегда видна)"""
-    return create_vzd_wear_panel()
-
-# ============================================================================
-# CALLBACKS (ЛОГИКА)
-# ============================================================================
 
 def bha_assembly_callbacks(app, data_bridge):
-    """Регистрирует ВСЕ callback'и модуля сборки КНБК"""
-    
-    # 1. Регистрируем callback'и всех подмодулей
-    vzd_wear_callbacks(app, data_bridge)
+    @app.callback(
+        [Output('bha-input-tab', 'style'),
+         Output('bha-umk-tab', 'style'),
+         Output('bha-joints-tab', 'style'),
+         Output('bha-vzd-tab', 'style')],
+        Input('bha-tabs', 'value'),
+        prevent_initial_call=True
+    )
+    def switch_bha_tab(tab):
+        hidden = {"display": "none", "marginTop": "20px"}
+        visible = {"display": "block", "marginTop": "20px"}
+        if tab == 'tab-input':
+            return visible, hidden, hidden, hidden
+        elif tab == 'tab-umk':
+            return hidden, visible, hidden, hidden
+        elif tab == 'tab-joints':
+            return hidden, hidden, visible, hidden
+        elif tab == 'tab-vzd':
+            return hidden, hidden, hidden, visible
+        return hidden, hidden, hidden, hidden
+
+    @app.callback(
+        Output('bha-validation-summary', 'children'),
+        Input('bha-elements-table', 'data'),
+        prevent_initial_call=True
+    )
+    def validate_bha_elements(data):
+        if not data:
+            return html.Div()
+        df = pd.DataFrame(data)
+        errors = []
+        if df['S/N'].duplicated().any():
+            duplicates = df[df['S/N'].duplicated()]['S/N'].tolist()
+            errors.append(f"❌ Найдены дубликаты S/N: {', '.join(duplicates)}")
+        invalid_dims = df[df['OD'] <= df['ID']]
+        if not invalid_dims.empty:
+            errors.append(f"❌ Найдены элементы с OD <= ID: {invalid_dims['Наименование'].tolist()}")
+        if errors:
+            return html.Div([
+                html.H5("Ошибки входного контроля:", style={"color": "#EF4444", "marginBottom": "10px"}),
+                html.Ul([html.Li(err, style={"marginBottom": "5px"}) for err in errors])
+            ], style={"backgroundColor": "#FEE2E2", "padding": "15px", "borderRadius": "6px", "border": "1px solid #EF4444"})
+        return html.Div([
+            html.H5("✅ Все элементы прошли входной контроль", style={"color": "#10B981", "marginBottom": "10px"}),
+            html.P(f"Проверено элементов: {len(df)}", style={"color": "#065F46"})
+        ], style={"backgroundColor": "#D1FAE5", "padding": "15px", "borderRadius": "6px", "border": "1px solid #10B981"})
+
     umk_enhanced_callbacks(app, data_bridge)
-    ai_advisor_callbacks(app, data_bridge)
-    warehouse_callbacks(app, data_bridge)
-    risk_assessment_callbacks(app, data_bridge)
-    
-    # 2. Переключение вкладок
-    @app.callback(
-        Output('tabs-content', 'children'),
-        Input('main-tabs', 'value')
-    )
-    def render_tab_content(tab_value):
-        if tab_value == 'tab-input':
-            return get_input_control_tab()
-        elif tab_value == 'tab-visual':
-            return get_visual_tab()
-        elif tab_value == 'tab-umk':
-            return get_umk_tab()
-        elif tab_value == 'tab-warehouse':
-            return get_warehouse_tab()
-        elif tab_value == 'tab-risks':
-            return get_risks_tab()
-        return html.Div("Выберите вкладку")
-    
-    # 3. Инициализация правой панели при загрузке
-    @app.callback(
-        Output('vzd-panel-content', 'children'),
-        Input('main-tabs', 'value')
-    )
-    def init_vzd_panel(_):
-        return get_vzd_panel()
+    vzd_wear_callbacks(app, data_bridge)
